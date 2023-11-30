@@ -20,5 +20,5 @@ The Smart Lamp project is an Internet of Things (IoT) system that integrates the
 ## Wiring Diagram
 ![Circuit-Diagram](./Images/Circuit-Diagram.png)
 
-## How it Works!
+## Basic Flow of The System
 ![How-It-Works-Image](./Images/How-It-Works.png)
