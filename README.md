@@ -5,11 +5,7 @@ The Smart Lamp project is an Internet of Things (IoT) system that integrates the
 | `Software`            | `Version`                                 |
 | --------------------- | ----------------------------------------- |
 | Arduino IDE           | <p>Version 2.2.1 `Recommended`</p> <p>CLI Version 0.34.0 `Recommended`</p> |
-| Android Studio        | Version Giraffe 2022.3.1 `Recommended`    |
-|                       | Graddle Version 8.3 `Recommended`         |
-|                       | SDK Version 33 `Recommended`              |
-|                       | JDK Version 21 `Recommended`              |
-| --------------------- | ----------------------------------------- |                  
+| Android Studio        | <p>Version Giraffe 2022.3.1 `Recommended`</p> <p>Graddle Version 8.3 `Recommended`</p> <p>SDK Version 33 `Recommended`</p> <p>JDK Version 21 `Recommended`</p> |                 
 
 ## Hardware Requirements
 
