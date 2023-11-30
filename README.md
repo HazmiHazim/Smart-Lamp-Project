@@ -10,12 +10,12 @@ The Smart Lamp project is an Internet of Things (IoT) system that integrates the
 ## Hardware Requirements
 | `Hardware` | `Specification` |
 | ---------- | ------ |
-|<img src="Images/ESP32.png" width="50px" height="50px"> | ESP32 WROOM-32 |
-|<img src="Images/Breadboard.png" width="50px" height="50px"> | GL-12 Breadboard | 
-|<img src="Images/Rgb-LED.png" width="50px" height="50px"> | RGB LED |
-|<img src="Images/Resistor.png" width="50px" height="50px"> | 220Ω Resistor |
-|<img src="Images/Jumper-Wires.jpg" width="50px" height="50px"> | Jumper Wires |
-|<img src="Images/Resistor.png" width="50px" height="50px"> | 3.7 LiPo Battery |
+|<img src="Images/ESP32.png" width="100px" height="80px"> | ESP32 WROOM-32 |
+|<img src="Images/Breadboard.png" width="100px" height="80px"> | GL-12 Breadboard | 
+|<img src="Images/Rgb-LED.png" width="100px" height="80px"> | RGB LED |
+|<img src="Images/Resistor.png" width="100px" height="80px"> | 220Ω Resistor |
+|<img src="Images/Jumper-Wires.jpg" width="100px" height="80px"> | Jumper Wires |
+|<img src="Images/Resistor.png" width="100px" height="80px"> | 3.7 LiPo Battery |
 
 ## Wiring Diagram
 ![Circuit-Diagram](./Images/Circuit-Diagram.png)
