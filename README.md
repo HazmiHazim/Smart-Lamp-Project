@@ -10,4 +10,4 @@ The Smart Lamp project is an Internet of Things (IoT) system that integrates the
 ## Hardware Requirements
 | `Hardware` | `Name` | `Specification` |
 | ---------- | ------ | --------------- |
-|<img src="images/Circuit-Diagram.png"> | Test | Test |
+|<img src="Images/Circuit-Diagram.png"> | Test | Test |
