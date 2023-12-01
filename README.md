@@ -15,7 +15,7 @@ The Smart Lamp project is an Internet of Things (IoT) system that integrates the
 |<img src="Images/Rgb-LED.png" width="100px" height="80px"> | RGB LED |
 |<img src="Images/Resistor.png" width="100px" height="80px"> | 220Ω Resistor |
 |<img src="Images/Jumper-Wires.jpg" width="100px" height="80px"> | Jumper Wires |
-|<img src="Images/Resistor.png" width="100px" height="80px"> | 3.7 LiPo Battery |
+|<img src="Images/LiPo4-Battery.png" width="100px" height="80px"> | 3.7 LiPo Battery |
 
 ## Wiring Diagram
 ![Circuit-Diagram](./Images/Circuit-Diagram.png)
