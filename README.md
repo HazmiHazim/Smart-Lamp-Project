@@ -8,7 +8,7 @@ https://youtu.be/qMK6ij1JYLE
 | `Software` | `Version` |
 | --------------------- | ----------------------------------------- |
 | Arduino IDE           | <p>Version 2.2.1 `Recommended`</p> <p>CLI Version 0.34.0 `Recommended`</p> |
-| Android Studio        | <p>Version Hedgehog 2023.1.1 `Recommended`</p> <p>Graddle Version 8.3 `Recommended`</p> <p>SDK Version 33 `Recommended`</p> <p>JDK Version 21 `Recommended`</p> |                 
+| Android Studio        | <p>Version Hedgehog 2023.1.1 `Recommended`</p> <p>Graddle Version 8.3 `Recommended`</p> <p>SDK Version 34 `Recommended`</p> <p>JDK Version 21 `Recommended`</p> |                 
 
 ## Hardware Requirements
 | `Hardware` | `Specification` |
