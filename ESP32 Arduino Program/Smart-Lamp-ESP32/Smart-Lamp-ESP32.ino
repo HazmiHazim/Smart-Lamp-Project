@@ -18,20 +18,23 @@
 #define LED3_GREEN 22  // GPIO 22
 #define LED3_BLUE 23   // GPIO 23
 
+// ACS712 Sensor
+#define ACS712 17      // GPIO 17
+
 // Setting PWM Properties
 #define FREQUENCY 5000
 // Channel for LED 1
-#define LED1_CHANNEL_RED 0      // Channel 0
-#define LED1_CHANNEL_GREEN 1    // Channel 1
-#define LED1_CHANNEL_BLUE 2     // Channel 2
+#define LED1_CHANNEL_RED 0    // Channel 0
+#define LED1_CHANNEL_GREEN 1  // Channel 1
+#define LED1_CHANNEL_BLUE 2   // Channel 2
 // Channel for LED 2
-#define LED2_CHANNEL_RED 3      // Channel 3
-#define LED2_CHANNEL_GREEN 4    // Channel 4
-#define LED2_CHANNEL_BLUE 5     // Channel 5
+#define LED2_CHANNEL_RED 3    // Channel 3
+#define LED2_CHANNEL_GREEN 4  // Channel 4
+#define LED2_CHANNEL_BLUE 5   // Channel 5
 // Channel for LED 3
-#define LED3_CHANNEL_RED 6      // Channel 6
-#define LED3_CHANNEL_GREEN 7    // Channel 7
-#define LED3_CHANNEL_BLUE 8     // Channel 8
+#define LED3_CHANNEL_RED 6    // Channel 6
+#define LED3_CHANNEL_GREEN 7  // Channel 7
+#define LED3_CHANNEL_BLUE 8   // Channel 8
 #define RESOLUTION 8
 
 // Create a Server on Port 80
@@ -48,6 +51,7 @@ const char *REQUEST_STOP_TIMER = "stop";
 const char *REQUEST_RED_VALUE = "red";
 const char *REQUEST_GREEN_VALUE = "green";
 const char *REQUEST_BLUE_VALUE = "blue";
+const char *REQUEST_DATA_ANALYSIS = "current";
 
 // Define hw_timer_t to Configure The Timer
 hw_timer_t *timer = NULL;
@@ -145,6 +149,11 @@ void setup() {
   // Stop Timer Interrupt if Requested
   server.on("/timer", HTTP_POST, [](AsyncWebServerRequest *request) {
     stopTimerInterrupt(request);
+  });
+
+  // Get Current Analysis if Requested
+  server.on("/analysis", HTTP_GET, [](AsyncWebServerRequest *request) {
+    getCurrentAnalysis(request);
   });
 }
 
@@ -379,4 +388,24 @@ void setColour(AsyncWebServerRequest *request, int rChannel, int gChannel, int b
     }
   }
   request->send(200, "text/plain", "OK");
+}
+
+// Function to Get Current Analysis for Data Analysis in Application
+void getCurrentAnalysis(AsyncWebServerRequest *request) {
+  double current = 0.0;
+  if (request->method() == HTTP_GET) {
+    if (request->hasParam(REQUEST_DATA_ANALYSIS)) {
+      const double sensitivity = 185.0;   // [ACS712 5A Module Used (185 mV/A)] | [20A Module -> 100 mV/A] | [30A Module -> 66 mV/A]
+      double sensorValue = analogRead(ACS712);
+      sensorValue += 120;    // Adjust for zero offset
+      double voltage = ((sensorValue * 3.3) / 4096.0) + 0.0 ;
+      current = (voltage * 1000) / sensitivity;
+      Serial.print("Current: ");
+      Serial.print(current, 4);
+      Serial.println(" Amps");
+    }
+  }
+  char buffer[10];
+  dtostrf(current, 4, 4, buffer);   // Convert Double to String Before Send to The Client
+  request->send(200, "text/plain", buffer);
 }
