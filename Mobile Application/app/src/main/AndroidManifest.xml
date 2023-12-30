@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.iot.smart_lighting">
+
+    <!-- To use volley and connect to the network -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- To access connected network ssid -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <!-- To get access to use SSID Network -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+
+    <!-- To get access to store asset files -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <!-- To get access to use Microphone -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher_smart_lamp"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.SmartLightingApp"
+        android:usesCleartextTraffic="true"
+        tools:targetApi="34" >
+
+        <!-- Features -->
+        <activity
+            android:name=".LampController"
+            android:exported="true" />
+
+        <activity
+            android:name=".Timer"
+            android:screenOrientation="portrait"
+            android:exported="true" />
+
+        <activity
+            android:name=".ColourEditor"
+            android:exported="true" />
+
+        <activity
+            android:name=".DataAnalysis"
+            android:exported="true" />
+
+        <!-- .................................................. -->
+
+        <!-- First Page -->
+        <activity
+            android:name=".Main"
+            android:exported="true">
+
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+
+    </activity>
+        <meta-data
+            android:name="preloaded_fonts"
+            android:resource="@array/preloaded_fonts" />
+    </application>
+
+</manifest>
