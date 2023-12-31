@@ -43,11 +43,13 @@ https://youtu.be/qMK6ij1JYLE
 </p>
 
 - **Landscape View**
+<p align="middle">
 <img src="Images/Home-Landscape.png" width="250px" height="150px">
 <img src="Images/Phoenix-Guide-Landscape.png" width="250px" height="150px">
 <img src="Images/Lamps-Control-Landscape.png" width="250px" height="150px">
 <img src="Images/Colour-Editor-Landscape.png" width="250px" height="150px">
 <img src="Images/Data-Analysis-Landscape.png" width="250px" height="150px">
+</p>
 
 ## License
 ```
