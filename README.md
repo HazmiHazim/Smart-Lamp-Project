@@ -31,7 +31,7 @@ https://youtu.be/qMK6ij1JYLE
 
 ## Mobile Application Interface
 - **Potrait View**
-<img src="Images/Home-Potrait.png">
+<img src="Images/Home-Potrait.png" width="150px" height="220px">
 <img src="Images/Phoenix-Guide-Potrait.png">
 <img src="Images/Lamps-Control-Potrait.png">
 <img src="Images/Timer-Empty-Potrait.png">
