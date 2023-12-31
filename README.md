@@ -31,10 +31,7 @@ https://youtu.be/qMK6ij1JYLE
 
 ## Mobile Application Interface
 - **Potrait View**
-<img src="Images/Home-Potrait.png" width="150px" height="250px">
-<img src="Images/Phoenix-Guide-Potrait.png" width="150px" height="250px">
-<img src="Images/Lamps-Control-Potrait.png" width="150px" height="250px">
-<img src="Images/Timer-Empty-Potrait.png" width="150px" height="250px">
+<img src="Images/Home-Potrait.png" width="150px" height="250px"><img src="Images/Phoenix-Guide-Potrait.png" width="150px" height="250px"><img src="Images/Lamps-Control-Potrait.png" width="150px" height="250px"><img src="Images/Timer-Empty-Potrait.png" width="150px" height="250px">
 <img src="Images/Timer-Function-Potrait.png" width="150px" height="250px">
 <img src="Images/Timer-Potrait.png" width="150px" height="250px">
 <img src="Images/Colour-Editor-Potrait.png" width="150px" height="250px">
