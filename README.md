@@ -32,20 +32,20 @@ https://youtu.be/qMK6ij1JYLE
 ## Mobile Application Interface
 - **Potrait View**
 <img src="Images/Home-Potrait.png" width="150px" height="250px">
-<img src="Images/Phoenix-Guide-Potrait.png">
-<img src="Images/Lamps-Control-Potrait.png">
-<img src="Images/Timer-Empty-Potrait.png">
-<img src="Images/Timer-Function-Potrait.png">
-<img src="Images/Timer-Potrait.png">
-<img src="Images/Colour-Editor-Potrait.png">
-<img src="Images/Data-Analysis-Potrait.png">
+<img src="Images/Phoenix-Guide-Potrait.png" width="150px" height="250px">
+<img src="Images/Lamps-Control-Potrait.png" width="150px" height="250px">
+<img src="Images/Timer-Empty-Potrait.png" width="150px" height="250px">
+<img src="Images/Timer-Function-Potrait.png" width="150px" height="250px">
+<img src="Images/Timer-Potrait.png" width="150px" height="250px">
+<img src="Images/Colour-Editor-Potrait.png" width="150px" height="250px">
+<img src="Images/Data-Analysis-Potrait.png" width="150px" height="250px">
 
 - **Landscape View**
-<img src="Images/Home-Landscape.png">
-<img src="Images/Phoenix-Guide-Landscape.png">
-<img src="Images/Lamps-Control-Landscape.png">
-<img src="Images/Colour-Editor-Landscape.png">
-<img src="Images/Data-Analysis-Landscape.png">
+<img src="Images/Home-Landscape.png" width="150px" height="250px">
+<img src="Images/Phoenix-Guide-Landscape.png" width="150px" height="250px">
+<img src="Images/Lamps-Control-Landscape.png" width="150px" height="250px">
+<img src="Images/Colour-Editor-Landscape.png" width="150px" height="250px">
+<img src="Images/Data-Analysis-Landscape.png" width="150px" height="250px">
 
 ## License
 ```
