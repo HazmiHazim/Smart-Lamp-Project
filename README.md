@@ -22,7 +22,7 @@ https://youtu.be/qMK6ij1JYLE
 |<img src="Images/Rgb-LED.png" width="100px" height="80px"> | RGB LED |
 |<img src="Images/ACS712.png" width="100px" height="80px"> | ACS712 5A Module |
 |<img src="Images/Resistor.png" width="100px" height="80px"> | 220Ω Resistor |
-|<img src="Images/Jumper-Wires.jpg" width="100px" height="80px"> | Jumper Wires |
+|<img src="Images/Jumper-Wires.png" width="100px" height="80px"> | Jumper Wires |
 |<img src="Images/KF301-Terminal-Block-Connector.png" width="100px" height="80px"> | KF301 2-Pin Terminal Block Connector |
 |<img src="Images/LiPo4-Battery.png" width="100px" height="80px"> | 3.7V LiPo Battery |
 
