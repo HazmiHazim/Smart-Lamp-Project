@@ -30,6 +30,22 @@ https://youtu.be/qMK6ij1JYLE
 ![How-It-Works-Image](./Images/How-It-Works.png)
 
 ## Mobile Application Interface
+- **Potrait View**
+<img src="Images/Home-Potrait.png">
+<img src="Images/Phoenix-Guide-Potrait.png">
+<img src="Images/Lamps-Control-Potrait.png">
+<img src="Images/Timer-Empty-Potrait.png">
+<img src="Images/Timer-Function-Potrait.png">
+<img src="Images/Timer-Potrait.png">
+<img src="Images/Colour-Editor-Potrait.png">
+<img src="Images/Data-Analysis-Potrait.png">
+
+- **Landscape View**
+<img src="Images/Home-Landscape.png">
+<img src="Images/Phoenix-Guide-Landscape.png">
+<img src="Images/Lamps-Control-Landscape.png">
+<img src="Images/Colour-Editor-Landscape.png">
+<img src="Images/Data-Analysis-Landscape.png">
 
 ## License
 ```
