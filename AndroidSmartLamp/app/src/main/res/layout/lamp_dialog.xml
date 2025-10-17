@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:gravity="center"
+    android:background="@drawable/custom_dialog">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/label_button_add_lamp"
+        android:fontFamily="@font/roboto_serif_bold"
+        android:textColor="@color/blue_grey"
+        android:textSize="16sp"
+        android:textStyle="bold"/>
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="20dp"/>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/home_input_lamp_id_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/label_input_lamp_id"
+        app:boxBackgroundColor="@color/white"
+        app:hintTextColor="@color/senerity_blue"
+        app:boxStrokeWidth="2dp"
+        app:boxStrokeColor="@color/custom_text_input_stroke"
+        app:boxStrokeWidthFocused="2dp"
+        app:boxStrokeErrorColor="@color/red"
+        app:boxCornerRadiusTopStart="10dp"
+        app:boxCornerRadiusTopEnd="10dp"
+        app:boxCornerRadiusBottomStart="10dp"
+        app:boxCornerRadiusBottomEnd="10dp"
+        app:hintTextAppearance="@font/roboto_serif_medium"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/home_input_lamp_id"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:textSize="12sp"
+            android:textColor="@color/black"/>
+    </com.google.android.material.textfield.TextInputLayout>
+    
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="15dp"/>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/registration_lamp_button"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:text="@string/label_button_add_lamp"
+            android:textSize="14sp"
+            android:textAllCaps="false"
+            android:background="@drawable/custom_button"
+            app:backgroundTint="@null" />
+
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/home_dialog_circular_progress"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center"
+            android:indeterminate="true"
+            android:visibility="gone"/>
+    </FrameLayout>
+
+</LinearLayout>
