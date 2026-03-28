@@ -89,8 +89,7 @@ class LampVM(private val lampService : LampServiceInterface) : ViewModel() {
         lampService.setColorCommand(lampPublicId, red, green, blue)
     }
 
-    override fun onCleared() {
-        super.onCleared()
+    fun disconnect() {
         lampService.disconnect()
     }
 }

@@ -3,6 +3,7 @@ package com.iot.android.smartlamp.ui.adapter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
@@ -17,8 +18,8 @@ class LampAdapter(
     ) : RecyclerView.Adapter<LampAdapter.ViewHolder>() {
 
     class ViewHolder(view : View) : RecyclerView.ViewHolder(view) {
+        val lampImage : ImageView = view.findViewById(R.id.card_lamp_image)
         val lampName : TextView = view.findViewById(R.id.card_lamp_name)
-        val lampModel : TextView = view.findViewById(R.id.card_lamp_model)
         val lampState : TextView = view.findViewById(R.id.card_lamp_state)
         val lampColour : TextView = view.findViewById(R.id.card_lamp_colour)
         val cardDetailNav : LinearLayout = view.findViewById(R.id.lamp_card_detail_nav)
@@ -32,13 +33,14 @@ class LampAdapter(
     override fun onBindViewHolder(holder : ViewHolder, position : Int) {
         val lamp = lampList[position]
         holder.lampName.text = lamp.name
-        holder.lampModel.text = lamp.model
-        holder.lampColour.text = lamp.colour
+        holder.lampColour.text = if (lamp.colour.isNotEmpty()) lamp.colour else "N/A"
 
         if (lamp.state) {
+            holder.lampImage.setImageResource(R.drawable.bulb_on)
             holder.lampState.text = "ON"
             holder.lampState.setTextColor(ContextCompat.getColor(holder.itemView.context, R.color.green))
         } else {
+            holder.lampImage.setImageResource(R.drawable.bulb_off)
             holder.lampState.text = "OFF"
             holder.lampState.setTextColor(ContextCompat.getColor(holder.itemView.context, R.color.red))
         }

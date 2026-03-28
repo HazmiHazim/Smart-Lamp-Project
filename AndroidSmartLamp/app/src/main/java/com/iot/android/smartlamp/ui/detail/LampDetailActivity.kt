@@ -17,7 +17,6 @@ import android.widget.ImageView
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
@@ -28,8 +27,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.iot.android.smartlamp.R
 import com.iot.android.smartlamp.di.DependencyContainer
-import com.iot.android.smartlamp.ui.LampVM
-import com.iot.android.smartlamp.ui.LampVMFactory
+import com.iot.android.smartlamp.service.LampServiceInterface
 import com.skydoves.colorpickerview.ColorPickerView
 import com.skydoves.colorpickerview.listeners.ColorEnvelopeListener
 import kotlinx.coroutines.Dispatchers
@@ -45,6 +43,7 @@ class LampDetailActivity : AppCompatActivity() {
     private lateinit var switch : SwitchMaterial
     private lateinit var switchState : TextView
     private lateinit var brightnessCard : CardView
+    private lateinit var colourCard : CardView
     private lateinit var brightnessLabelText : TextView
     private lateinit var brightnessSeekBar : SeekBar
     private lateinit var colourPicker : ColorPickerView
@@ -56,9 +55,7 @@ class LampDetailActivity : AppCompatActivity() {
     private var selectedBlueCode : Int = 0
     private var lampStateIsChecked : Boolean = false
 
-    private val lampVM: LampVM by viewModels {
-        LampVMFactory(DependencyContainer.provideLampService(this))
-    }
+    private lateinit var lampService: LampServiceInterface
 
     private var colourMap: Map<String, String>? = null
 
@@ -70,6 +67,8 @@ class LampDetailActivity : AppCompatActivity() {
             supportActionBar?.hide()
         }
 
+        lampService = DependencyContainer.provideLampService(this)
+
         backBtn = findViewById(R.id.lamp_detail_back_button)
         lampNameLabelText = findViewById(R.id.lamp_detail_label_name)
         lampModelLabelText = findViewById(R.id.lamp_detail_label_model)
@@ -77,6 +76,7 @@ class LampDetailActivity : AppCompatActivity() {
         switch = findViewById(R.id.lamp_switch)
         switchState = findViewById(R.id.switch_state)
         brightnessCard = findViewById(R.id.brightness_card)
+        colourCard = findViewById(R.id.colour_card)
         brightnessLabelText = findViewById(R.id.lamp_detail_label_brightness_level)
         brightnessSeekBar = findViewById(R.id.brightness_seekbar)
         colourPicker = findViewById(R.id.lamp_detail_colour_picker)
@@ -94,6 +94,13 @@ class LampDetailActivity : AppCompatActivity() {
         lampModelLabelText.text = lampModel
         switch.isChecked = lampState
         updateSwitchUI(lampState)
+
+        if (lampState) {
+            brightnessCard.visibility = View.VISIBLE
+            colourCard.visibility = View.VISIBLE
+            brightnessSeekBar.progress = 255
+            brightnessLabelText.text = "100%"
+        }
 
         lifecycleScope.launch {
             colourMap = withContext(Dispatchers.IO) {
@@ -113,26 +120,35 @@ class LampDetailActivity : AppCompatActivity() {
         switch.setOnCheckedChangeListener { _, isChecked ->
             lampStateIsChecked = isChecked
             if (isChecked) {
-                lampVM.turnOnCommand(lampPublicId)
-                lampVM.toggleLampState(lampId, true)
+                lampService.turnOnCommand(lampPublicId)
                 updateSwitchUI(true)
+                brightnessSeekBar.progress = 255
+                brightnessLabelText.text = "100%"
                 expandCard(brightnessCard)
+                expandCard(colourCard)
             } else {
-                lampVM.turnOffCommand(lampPublicId)
-                lampVM.toggleLampState(lampId, false)
+                lampService.turnOffCommand(lampPublicId)
                 updateSwitchUI(false)
+                brightnessSeekBar.progress = 0
+                brightnessLabelText.text = "0%"
                 collapseCard(brightnessCard)
+                collapseCard(colourCard)
+            }
+            lifecycleScope.launch(Dispatchers.IO) {
+                lampService.updateLampState(lampId, isChecked)
             }
         }
 
         brightnessSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar : SeekBar, progress : Int, fromUser : Boolean) {}
+            override fun onProgressChanged(seekBar : SeekBar, progress : Int, fromUser : Boolean) {
+                val percent = (progress * 100) / 255
+                brightnessLabelText.text = "$percent%"
+            }
             override fun onStartTrackingTouch(seekBar : SeekBar) {}
 
             override fun onStopTrackingTouch(seekBar : SeekBar) {
                 val finalBrightnessValue = seekBar.progress
-                lampVM.setBrightnessCommand(lampPublicId, finalBrightnessValue)
-                lampVM.updateBrightness(lampId, finalBrightnessValue)
+                lampService.setBrightnessCommand(lampPublicId, finalBrightnessValue)
             }
         })
 
@@ -145,6 +161,7 @@ class LampDetailActivity : AppCompatActivity() {
         })
 
         colourAppliedBtn.setOnClickListener {
+            lampService.setColorCommand(lampPublicId, selectedRedCode, selectedGreenCode, selectedBlueCode)
             val colorName = colourMap?.entries
                 ?.firstOrNull { it.value.equals(selectedColourHexCode, ignoreCase = true) }
                 ?.key

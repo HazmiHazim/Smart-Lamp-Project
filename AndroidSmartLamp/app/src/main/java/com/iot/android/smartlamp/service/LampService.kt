@@ -99,17 +99,17 @@ class LampService(
     }
 
     override fun turnOnCommand(lampPublicId: String) {
-        val brightness = "255".toByteArray(Charsets.UTF_8)
-        bluetoothManager.writeData(lampPublicId, brightness)
+        val b: Byte = 255.toByte()
+        bluetoothManager.writeData(lampPublicId, byteArrayOf(b, b, b))
     }
 
     override fun turnOffCommand(lampPublicId: String) {
-        val brightness = "0".toByteArray(Charsets.UTF_8)
-        bluetoothManager.writeData(lampPublicId, brightness)
+        bluetoothManager.writeData(lampPublicId, byteArrayOf(0, 0, 0))
     }
 
     override fun setBrightnessCommand(lampPublicId: String, brightness: Int) {
-        bluetoothManager.writeData(lampPublicId, brightness.toString().toByteArray(Charsets.UTF_8))
+        val b = brightness.coerceIn(0, 255).toByte()
+        bluetoothManager.writeData(lampPublicId, byteArrayOf(b, b, b))
     }
 
     override fun setColorCommand(lampPublicId: String, red: Int, green: Int, blue: Int) {

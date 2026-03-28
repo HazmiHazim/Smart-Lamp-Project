@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
+import android.bluetooth.BluetoothStatusCodes
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.content.Context
@@ -16,6 +17,7 @@ import android.util.Log
 import androidx.annotation.RequiresPermission
 import com.iot.android.smartlamp.model.DiscoveredLed
 import com.iot.android.smartlamp.model.LampBluetoothAddress
+import java.util.LinkedList
 
 class BluetoothManager(private val context: Context) : BluetoothManagerInterface {
 
@@ -27,6 +29,19 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
     private val mainHandler = Handler(Looper.getMainLooper())
     private val scanHandler = Handler(Looper.getMainLooper())
     private var currentScanCallback: ScanCallback? = null
+
+    private val writeQueue = LinkedList<WriteRequest>()
+    private var isWriting = false
+    private val writeTimeoutRunnable = Runnable {
+        Log.e("BLE", "Write timed out, unblocking queue")
+        processNextWrite()
+    }
+
+    private data class WriteRequest(
+        val characteristic: BluetoothGattCharacteristic,
+        val data: ByteArray,
+        val gatt: BluetoothGatt
+    )
 
     private val prefs by lazy {
         context.getSharedPreferences("ble_prefs", Context.MODE_PRIVATE)
@@ -62,6 +77,11 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
                         gatt.close()
                         bluetoothGatt = null
                         lampBLEAddressMap.clear()
+                        synchronized(writeQueue) {
+                            writeQueue.clear()
+                            isWriting = false
+                        }
+                        mainHandler.removeCallbacks(writeTimeoutRunnable)
                         mainHandler.post { onConnectionStateChanged?.invoke(false) }
                     }
                 }
@@ -114,6 +134,20 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
                 Log.e("BLE", "No compatible service found with RX/TX characteristics")
             }
 
+            override fun onCharacteristicWrite(
+                gatt: BluetoothGatt,
+                characteristic: BluetoothGattCharacteristic,
+                status: Int
+            ) {
+                mainHandler.removeCallbacks(writeTimeoutRunnable)
+                if (status != BluetoothGatt.GATT_SUCCESS) {
+                    Log.e("BLE", "Write failed for ${characteristic.uuid}, status: $status")
+                } else {
+                    Log.d("BLE", "Write success for ${characteristic.uuid}")
+                }
+                processNextWrite()
+            }
+
             override fun onCharacteristicChanged(
                 gatt: BluetoothGatt,
                 characteristic: BluetoothGattCharacteristic
@@ -138,6 +172,8 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
     override fun writeData(lampPublicId: String, data: ByteArray) {
         val address = lampBLEAddressMap[lampPublicId] ?: run {
             Log.e("BLE", "LED not found: $lampPublicId")
+            Log.e("BLE", "Available mappings: ${lampBLEAddressMap.keys}")
+            Log.e("BLE", "GATT connected: ${bluetoothGatt != null}")
             return
         }
 
@@ -148,10 +184,61 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
 
         val char = gatt.getService(address.serviceAddress)?.getCharacteristic(address.receiverAddress)
         if (char != null) {
-            Log.d("COMMAND", "Writing to ${address.receiverAddress}: ${data.contentToString()}")
-            gatt.writeCharacteristic(char, data, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+            Log.d("COMMAND", "Queuing write to ${address.receiverAddress}: ${String(data)}")
+            enqueueWrite(WriteRequest(char, data, gatt))
         } else {
-            Log.e("BLE", "Characteristic not available")
+            Log.e("BLE", "Characteristic not available for ${address.receiverAddress}")
+        }
+    }
+
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    private fun enqueueWrite(request: WriteRequest) {
+        synchronized(writeQueue) {
+            writeQueue.add(request)
+            if (!isWriting) {
+                isWriting = true
+                executeWrite(request)
+            }
+        }
+    }
+
+    private fun processNextWrite() {
+        synchronized(writeQueue) {
+            writeQueue.poll()
+            val next = writeQueue.peek()
+            if (next != null) {
+                executeWrite(next)
+            } else {
+                isWriting = false
+            }
+        }
+    }
+
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    private fun executeWrite(request: WriteRequest) {
+        val result = request.gatt.writeCharacteristic(
+            request.characteristic,
+            request.data,
+            BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+        )
+
+        if (result != BluetoothStatusCodes.SUCCESS) {
+            Log.e("BLE", "writeCharacteristic returned error: $result, retrying in 100ms")
+            mainHandler.postDelayed({
+                val retry = request.gatt.writeCharacteristic(
+                    request.characteristic,
+                    request.data,
+                    BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+                )
+                if (retry != BluetoothStatusCodes.SUCCESS) {
+                    Log.e("BLE", "Retry also failed: $retry, skipping")
+                    processNextWrite()
+                } else {
+                    mainHandler.postDelayed(writeTimeoutRunnable, 5000)
+                }
+            }, 100)
+        } else {
+            mainHandler.postDelayed(writeTimeoutRunnable, 5000)
         }
     }
 
@@ -166,10 +253,15 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     override fun disconnect() {
+        mainHandler.removeCallbacks(writeTimeoutRunnable)
         bluetoothGatt?.disconnect()
         bluetoothGatt?.close()
         bluetoothGatt = null
         lampBLEAddressMap.clear()
+        synchronized(writeQueue) {
+            writeQueue.clear()
+            isWriting = false
+        }
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
@@ -247,6 +339,16 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
             val device = adapter.getRemoteDevice(mac)
             Log.d("BLE", "Attempting reconnect to $mac")
             connect(device)
+
+            mainHandler.postDelayed({
+                if (bluetoothGatt != null && lampBLEAddressMap.isEmpty()) {
+                    Log.d("BLE", "Reconnect timed out after 10 seconds")
+                    bluetoothGatt?.disconnect()
+                    bluetoothGatt?.close()
+                    bluetoothGatt = null
+                }
+            }, 10_000)
+
             true
         } catch (e: IllegalArgumentException) {
             Log.e("BLE", "Invalid MAC address: $mac")

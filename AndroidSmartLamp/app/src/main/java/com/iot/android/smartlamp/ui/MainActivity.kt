@@ -65,4 +65,11 @@ class MainActivity : AppCompatActivity() {
     private fun onBluetoothPermissionGranted() {
         lampVM.reconnectLastDevice()
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isFinishing) {
+            lampVM.disconnect()
+        }
+    }
 }

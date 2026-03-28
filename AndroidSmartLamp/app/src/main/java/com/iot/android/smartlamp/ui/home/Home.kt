@@ -9,14 +9,12 @@ import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.cardview.widget.CardView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.facebook.shimmer.ShimmerFrameLayout
 import com.iot.android.smartlamp.R
 import com.iot.android.smartlamp.di.DependencyContainer
@@ -32,7 +30,6 @@ import kotlinx.coroutines.launch
 class Home : Fragment(R.layout.home) {
 
     private lateinit var topBar : LinearLayout
-    private lateinit var addLampBtn : ImageView
     private lateinit var shimmerLayout : ShimmerFrameLayout
     private lateinit var swipeRefresh : SwipeRefreshLayout
     private lateinit var recyclerView : RecyclerView
@@ -63,9 +60,8 @@ class Home : Fragment(R.layout.home) {
         super.onViewCreated(view, savedInstanceState)
 
         topBar = view.findViewById(R.id.topbar)
-        addLampBtn = view.findViewById(R.id.add_lamp_button)
-        swipeRefresh = view.findViewById(R.id.home_swipe_refresh)
         shimmerLayout = view.findViewById(R.id.home_shimmer_layout)
+        swipeRefresh = view.findViewById(R.id.home_swipe_refresh)
         recyclerView = view.findViewById(R.id.home_recyclerview)
         emptyCard = view.findViewById(R.id.home_lamp_empty_card)
         emptyCardBulb = view.findViewById(R.id.home_lamp_empty_card_bulb)
@@ -75,20 +71,24 @@ class Home : Fragment(R.layout.home) {
 
         ScreenUtils.resizeImage(emptyCardBulb, 100)
 
-        addLampBtn.setOnClickListener {
-            scanAndAddLamps()
+        swipeRefresh.setOnRefreshListener {
+            Toast.makeText(requireContext(), "Scanning for devices...", Toast.LENGTH_SHORT).show()
+            scanForDevices()
+            swipeRefresh.isRefreshing = false
         }
 
-        swipeRefresh.setOnRefreshListener {
-            scanAndAddLamps()
+        val hasExistingData = lampVM.lampList.value?.isNotEmpty() == true
+
+        if (hasExistingData) {
+            shimmerLayout.visibility = View.GONE
+            swipeRefresh.visibility = View.VISIBLE
+        } else {
+            scanForDevices()
         }
 
         lampVM.lampList.observe(viewLifecycleOwner) { list ->
-            shimmerLayout.startShimmer()
-            swipeRefresh.visibility = View.GONE
-
-            viewLifecycleOwner.lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            if (shimmerLayout.visibility == View.VISIBLE) {
+                viewLifecycleOwner.lifecycleScope.launch {
                     delay(3000)
                     shimmerLayout.stopShimmer()
                     shimmerLayout.visibility = View.GONE
@@ -96,6 +96,9 @@ class Home : Fragment(R.layout.home) {
                     lampAdapter.updateList(list)
                     updateLampCardState(list)
                 }
+            } else {
+                lampAdapter.updateList(list)
+                updateLampCardState(list)
             }
         }
     }
@@ -104,20 +107,16 @@ class Home : Fragment(R.layout.home) {
         if (list.isEmpty()) {
             recyclerView.visibility = View.GONE
             emptyCard.visibility = View.VISIBLE
-            swipeRefresh.isEnabled = false
         } else {
             emptyCard.visibility = View.GONE
             recyclerView.visibility = View.VISIBLE
-            swipeRefresh.isEnabled = true
         }
     }
 
-    private fun scanAndAddLamps() {
-        Toast.makeText(requireContext(), "Scanning for ESP32 devices...", Toast.LENGTH_SHORT).show()
+    private fun scanForDevices() {
         lampVM.scanForDevice { device ->
             lampVM.connectToLamp(device)
         }
-        swipeRefresh.isRefreshing = false
     }
 
     private fun openLampDetail(lamp : Lamp) {

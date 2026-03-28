@@ -13,72 +13,70 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingHorizontal="20dp"
-        android:paddingVertical="10dp"
+        android:paddingVertical="15dp"
         android:orientation="horizontal"
-        android:gravity="start"
+        android:gravity="center_vertical"
         android:clickable="true"
         android:focusable="true"
         android:foreground="?attr/selectableItemBackground">
 
         <ImageView
-            android:id="@+id/bulb_image"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="30dp"
+            android:id="@+id/card_lamp_image"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="20dp"
             android:contentDescription="@string/bulb"
             android:src="@drawable/bulb_off"/>
 
         <LinearLayout
             android:layout_width="0dp"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="start|center">
+            android:orientation="vertical">
 
             <TextView
                 android:id="@+id/card_lamp_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="LAMP NAME"
+                android:text="LED 1"
                 android:fontFamily="@font/roboto_serif_bold"
                 android:textStyle="bold"
-                android:textSize="12sp"
-                android:textAllCaps="true"
+                android:textSize="16sp"
                 android:textColor="@color/blue_grey"/>
 
-            <TextView
-                android:id="@+id/card_lamp_model"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/not_applicable"
-                android:fontFamily="@font/roboto_serif_medium"
-                android:textSize="12sp"
-                android:textAllCaps="false"
-                android:textColor="@color/blue_grey"/>
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-            <TextView
-                android:id="@+id/card_lamp_state"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/not_applicable"
-                android:fontFamily="@font/roboto_serif_medium"
-                android:textSize="12sp"
-                android:textAllCaps="true"
-                android:textColor="@color/blue_grey"/>
+                <TextView
+                    android:id="@+id/card_lamp_state"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="OFF"
+                    android:fontFamily="@font/roboto_serif_medium"
+                    android:textSize="12sp"
+                    android:textAllCaps="true"
+                    android:textColor="@color/red"/>
 
-            <TextView
-                android:id="@+id/card_lamp_colour"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/not_applicable"
-                android:fontFamily="@font/roboto_serif_medium"
-                android:textSize="12sp"
-                android:textAllCaps="false"
-                android:textColor="@color/blue_grey"/>
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="12dp"
+                    android:layout_marginHorizontal="10dp"
+                    android:background="@color/dark_grey"/>
+
+                <TextView
+                    android:id="@+id/card_lamp_colour"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/not_applicable"
+                    android:fontFamily="@font/roboto_serif_medium"
+                    android:textSize="12sp"
+                    android:textColor="@color/dark_grey"/>
+
+            </LinearLayout>
         </LinearLayout>
 
         <ImageView

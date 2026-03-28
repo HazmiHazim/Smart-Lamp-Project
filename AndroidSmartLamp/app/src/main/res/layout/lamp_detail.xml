@@ -270,8 +270,10 @@
                         android:layout_height="20dp" />
 
                     <androidx.cardview.widget.CardView
+                        android:id="@+id/colour_card"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:visibility="gone"
                         app:cardCornerRadius="15dp"
                         app:cardElevation="0dp">
 

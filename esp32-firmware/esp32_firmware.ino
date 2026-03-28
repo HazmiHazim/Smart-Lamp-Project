@@ -8,10 +8,11 @@
 #define RESOLUTION 8
 
 // Define the Bluetooth device name
-const char* BLE_NAME = "ESP32-Smart-Lamp";
-const char* SERVICE_UUID = "UUID";
+const char *BLE_NAME = "ESP32-Smart-Lamp";
+const char *SERVICE_UUID = "UUID";
 
-struct RGBPin {
+struct RGBPin
+{
   int red;
   int green;
   int blue;
@@ -20,130 +21,201 @@ struct RGBPin {
   int bChannel;
 };
 
-struct LEDUUID {
+struct LEDUUID
+{
   const char *rx;
   const char *tx;
 };
 
-class RGBLED {
+class RGBLED
+{
   RGBPin pin;
   int brightness;
+  int red, green, blue;
 
-  public:
-    RGBLED(RGBPin ledPin) : pin(ledPin), brightness(0) {}
+public:
+  RGBLED(RGBPin ledPin) : pin(ledPin), brightness(0), red(255), green(255), blue(255) {}
 
-    void begin() {
-      // Configure LED PWM
-      ledcAttachChannel(pin.red, FREQUENCY, RESOLUTION, pin.rChannel);
-      ledcAttachChannel(pin.green, FREQUENCY, RESOLUTION, pin.gChannel);
-      ledcAttachChannel(pin.blue, FREQUENCY, RESOLUTION, pin.bChannel);
+  void begin()
+  {
+    // Configure LED PWM
+    ledcAttachChannel(pin.red, FREQUENCY, RESOLUTION, pin.rChannel);
+    ledcAttachChannel(pin.green, FREQUENCY, RESOLUTION, pin.gChannel);
+    ledcAttachChannel(pin.blue, FREQUENCY, RESOLUTION, pin.bChannel);
 
-      // Initialize OFF
-      setBrightness(0);
+    applyLamp();
+  }
+
+  void applyLamp()
+  {
+    uint32_t redDuty = (red * brightness) / 255;
+    uint32_t greenDuty = (green * brightness) / 255;
+    uint32_t blueDuty = (blue * brightness) / 255;
+
+    ledcWriteChannel(pin.rChannel, redDuty);
+    ledcWriteChannel(pin.gChannel, greenDuty);
+    ledcWriteChannel(pin.bChannel, blueDuty);
+  }
+
+  void setBrightness(int value)
+  {
+    brightness = constrain(value, 0, 255);
+    applyLamp();
+    Serial.printf("Brightness set to %d\n", brightness);
+  }
+
+  void setColour(int redValue, int greenValue, int blueValue)
+  {
+    red = redValue;
+    green = greenValue;
+    blue = blueValue;
+
+    if (brightness == 0)
+    {
+      brightness = 255;
     }
 
-    void setBrightness(int value) {
-      brightness = constrain(value, 0, 255);
-      ledcWriteChannel(pin.rChannel, brightness);
-      ledcWriteChannel(pin.gChannel, brightness);
-      ledcWriteChannel(pin.bChannel, brightness);
+    applyLamp();
+    Serial.printf("Color set to R:%d G:%d B:%d\n", red, green, blue);
+  }
 
-      if (brightness > 0)
-        Serial.printf("LED (R%d,G%d,B%d) → ON (%d)\n", pin.red, pin.green, pin.blue, brightness);
-      else
-        Serial.printf("LED (R%d,G%d,B%d) → OFF\n", pin.red, pin.green, pin.blue);
-    }
+  void turnOff()
+  {
+    brightness = 0;
+    applyLamp();
+    Serial.println("LED turned OFF");
+  }
 
-    void turnOff() { setBrightness(0); }
-    int getBrightness() const { return brightness; }
+  int getBrightness() const { return brightness; }
 };
 
-class BLELedController : public BLECharacteristicCallbacks, public BLEServerCallbacks {
-  private:
-    BLECharacteristic *txCharacteristics[3];
-    BLECharacteristic *rxCharacteristics[3];
-    RGBLED *leds[3];
-    LEDUUID uuids[3];
-    BLEService *pService;
+class BLELedController : public BLECharacteristicCallbacks, public BLEServerCallbacks
+{
+private:
+  BLECharacteristic *txCharacteristics[3];
+  BLECharacteristic *rxCharacteristics[3];
+  RGBLED *leds[3];
+  LEDUUID uuids[3];
+  BLEService *pService;
 
-  public:
-    BLELedController(RGBLED *l1, RGBLED *l2, RGBLED *l3, const LEDUUID (&uuidList)[3]) : leds{l1, l2, l3} {
-      for (int i = 0; i < 3; i++) {
-        uuids[i] = uuidList[i];
+public:
+  BLELedController(RGBLED *l1, RGBLED *l2, RGBLED *l3, const LEDUUID (&uuidList)[3]) : leds{l1, l2, l3}
+  {
+    for (int i = 0; i < 3; i++)
+    {
+      uuids[i] = uuidList[i];
+    }
+  }
+
+  void begin()
+  {
+    BLEDevice::init(BLE_NAME);
+    BLEServer *pServer = BLEDevice::createServer();
+    pServer->setCallbacks(this);
+
+    pService = pServer->createService(SERVICE_UUID);
+
+    // Create 3 LED characteristic pairs
+    for (int i = 0; i < 3; i++)
+    {
+      txCharacteristics[i] = pService->createCharacteristic(uuids[i].tx, BLECharacteristic::PROPERTY_NOTIFY);
+      txCharacteristics[i]->addDescriptor(new BLE2902());
+
+      rxCharacteristics[i] = pService->createCharacteristic(uuids[i].rx, BLECharacteristic::PROPERTY_WRITE);
+      rxCharacteristics[i]->setCallbacks(this);
+    }
+
+    pService->start(); // Start the service
+    BLEAdvertising *pAdvertising = pServer->getAdvertising();
+    pAdvertising->addServiceUUID(SERVICE_UUID);
+    pAdvertising->setScanResponse(true);
+    pServer->getAdvertising()->start();
+
+    Serial.println("BLE Ready — Waiting for client connection...");
+  }
+
+  // === BLEServerCallbacks ===
+  void onConnect(BLEServer *pServer) override
+  {
+    Serial.println("Client connected.");
+  }
+
+  void onDisconnect(BLEServer *pServer) override
+  {
+    Serial.println("Client disconnected.");
+  }
+
+  // === BLECharacteristicCallbacks ===
+  void onWrite(BLECharacteristic *pCharacteristic) override
+  {
+    for (int i = 0; i < 3; i++)
+    {
+      if (pCharacteristic == rxCharacteristics[i])
+      {
+        handleWriteForLED(*leds[i], pCharacteristic, i);
+        break;
       }
     }
+  }
 
-    void begin() {
-      BLEDevice::init(BLE_NAME);
-      BLEServer *pServer = BLEDevice::createServer();
-      pServer->setCallbacks(this);
+private:
+  void handleWriteForLED(RGBLED &led, BLECharacteristic *pCharacteristic, int index)
+  {
+    String rawValue = pCharacteristic->getValue();
+    size_t length = rawValue.length();
+    Serial.printf("Received %d bytes\n", length);
 
-      pService = pServer->createService(SERVICE_UUID);
-
-      // Create 3 LED characteristic pairs
-      for (int i = 0; i < 3; i++) {
-        txCharacteristics[i] = pService->createCharacteristic(uuids[i].tx, BLECharacteristic::PROPERTY_NOTIFY);
-        txCharacteristics[i]->addDescriptor(new BLE2902());
-
-        rxCharacteristics[i] = pService->createCharacteristic(uuids[i].rx, BLECharacteristic::PROPERTY_WRITE);
-        rxCharacteristics[i]->setCallbacks(this);
-      }
-
-      pService->start(); // Start the service
-      BLEAdvertising *pAdvertising = pServer->getAdvertising();
-      pAdvertising->addServiceUUID(SERVICE_UUID);
-      pAdvertising->setScanResponse(true);
-      pServer->getAdvertising()->start();
-
-      Serial.println("BLE Ready — Waiting for client connection...");
+    if (length < 3) {
+      Serial.println("Not enough bytes, ignoring");
+      return;
     }
 
-    // === BLEServerCallbacks ===
-    void onConnect(BLEServer *pServer) override {
-      Serial.println("Client connected.");
+    uint8_t red = (uint8_t)rawValue[0];
+    uint8_t green = (uint8_t)rawValue[1];
+    uint8_t blue = (uint8_t)rawValue[2];
+    Serial.printf("RGB: %d, %d, %d\n", red, green, blue);
+
+    // Turn off if all channels are zero
+    if (red == 0 && green == 0 && blue == 0)
+    {
+      led.turnOff();
+      sendNotification(index, 0);
+      Serial.println("LED OFF (RGB = 0,0,0)");
+      return;
     }
 
-    void onDisconnect(BLEServer *pServer) override {
-      Serial.println("Client disconnected.");
+    // Color or Brightness (all values equal -> brightness)
+    if (red == green && green == blue)
+    {
+      uint8_t brightness = red;
+      led.setBrightness(brightness);
+      sendNotification(index, brightness);
     }
-
-    // === BLECharacteristicCallbacks ===
-    void onWrite(BLECharacteristic *pCharacteristic) override {
-      for (int i = 0; i < 3; i++) {
-        if (pCharacteristic == rxCharacteristics[i]) {
-          handleWriteForLED(*leds[i], pCharacteristic, i);
-          break;
-        }
-      }
+    else
+    {
+      // Color: normal 3-channel RGB
+      led.setColour(red, green, blue);
+      sendNotification(index, red, green, blue);
     }
+  }
 
-  private:
-    void handleWriteForLED(RGBLED &led, BLECharacteristic *pCharacteristic, int index) {
-      std::string valueStr = std::string(pCharacteristic->getValue().c_str());
-      if (valueStr.empty()) return;
+  // For brightness mode
+  void sendNotification(int ledIndex, int brightness)
+  {
+    char msg[32];
+    snprintf(msg, sizeof(msg), "LED%d brightness: %d", ledIndex + 1, brightness);
+    txCharacteristics[ledIndex]->setValue(msg);
+    txCharacteristics[ledIndex]->notify();
+  }
 
-      int brightness = 0;
-      try {
-        brightness = std::stoi(valueStr);
-      } catch (...) {
-        brightness = 0;
-      }
-
-      if (brightness >= 0 && brightness <= 255) {
-        led.setBrightness(brightness);
-        sendNotification(index, brightness);
-      } else {
-        led.turnOff();
-        sendNotification(index, 0);
-      }
-    }
-
-    void sendNotification(int ledIndex, int brightness) {
-      char msg[32];
-      snprintf(msg, sizeof(msg), "LED%d brightness: %d", ledIndex + 1, brightness);
-      txCharacteristics[ledIndex]->setValue(msg);
-      txCharacteristics[ledIndex]->notify();
-    }
+  // For colour mode
+  void sendNotification(int ledIndex, uint8_t r, uint8_t g, uint8_t b)
+  {
+    char msg[32];
+    snprintf(msg, sizeof(msg), "LED%d color: (%d,%d,%d)", ledIndex + 1, r, g, b);
+    txCharacteristics[ledIndex]->setValue(msg);
+    txCharacteristics[ledIndex]->notify();
+  }
 };
 
 // ======== GLOBAL OBJECTS ========
@@ -159,14 +231,16 @@ LEDUUID ledUUIDs[3] = {
 
 BLELedController bleController(&led1, &led2, &led3, ledUUIDs);
 
-void setup() {
-  Serial.begin(115200);      // Initialize the serial port
+void setup()
+{
+  Serial.begin(115200); // Initialize the serial port
   led1.begin();
   led2.begin();
   led3.begin();
   bleController.begin();
 }
 
-void loop() {
+void loop()
+{
   // Nothing needed — BLE callbacks handle everything
 }
