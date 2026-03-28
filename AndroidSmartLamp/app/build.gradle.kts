@@ -45,6 +45,8 @@ dependencies {
     implementation("com.github.skydoves:colorpickerview:2.3.0")
     implementation("com.google.code.gson:gson:2.13.2")
     implementation("androidx.fragment:fragment-ktx:1.8.9")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
     implementation("com.facebook.shimmer:shimmer:0.5.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

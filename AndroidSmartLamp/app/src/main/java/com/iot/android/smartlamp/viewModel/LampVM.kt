@@ -4,50 +4,58 @@ import android.bluetooth.BluetoothDevice
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.iot.android.smartlamp.model.Lamp
 import com.iot.android.smartlamp.service.local.Lamp.LampServiceInterface
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class LampVM(private val lampService : LampServiceInterface) : ViewModel() {
 
-    private val _lampList = MutableLiveData<MutableList<Lamp>>(mutableListOf())
-    val lampList : LiveData<MutableList<Lamp>> get() = _lampList
+    private val _lampList = MutableLiveData<List<Lamp>>(emptyList())
+    val lampList : LiveData<List<Lamp>> get() = _lampList
 
     init {
         lampService.onLampUpdate { updatedLampList ->
-            _lampList.postValue(updatedLampList.toMutableList())
+            _lampList.postValue(updatedLampList.toList())
         }
 
-        val currentList = lampService.getAllLamps()
-        _lampList.value = currentList?.toMutableList()
-    }
-
-    fun getAllLamps() : List<Lamp>? {
-        return lampService.getAllLamps()
+        viewModelScope.launch {
+            val currentList = withContext(Dispatchers.IO) {
+                lampService.getAllLamps()
+            }
+            _lampList.postValue(currentList?.toList() ?: emptyList())
+        }
     }
 
     fun addLamp(lamp : Lamp) {
-        val currentList = _lampList.value ?: mutableListOf()
-        val newList = currentList.toMutableList().apply { add(lamp) }
-        _lampList.value = newList
-        lampService.addLamp(lamp)
+        viewModelScope.launch(Dispatchers.IO) {
+            lampService.addLamp(lamp)
+        }
     }
 
     fun deleteLamp(id : Int) {
-        lampService.deleteLamp(id)
+        viewModelScope.launch(Dispatchers.IO) {
+            lampService.deleteLamp(id)
+        }
     }
 
     fun toggleLampState(lampId: Int, lampState: Boolean) {
-        lampService.updateLampState(lampId, lampState)
-
-        _lampList.value = _lampList.value?.map { lamp ->
+        // Update UI immediately
+        _lampList.postValue(_lampList.value?.map { lamp ->
             if (lamp.id == lampId) lamp.copy(state = lampState) else lamp
-        }?.toMutableList()
+        } ?: emptyList())
+
+        viewModelScope.launch(Dispatchers.IO) {
+            lampService.updateLampState(lampId, lampState)
+        }
     }
 
     fun updateBrightness(lampId : Int, brightness : Int) {
-        _lampList.value = _lampList.value?.map { lamp ->
+        _lampList.postValue(_lampList.value?.map { lamp ->
             if (lamp.id == lampId) lamp.copy(brightness = brightness) else lamp
-        }?.toMutableList()
+        } ?: emptyList())
     }
 
     fun connectToLamp(device : BluetoothDevice) {

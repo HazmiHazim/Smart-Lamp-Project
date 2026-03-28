@@ -9,6 +9,7 @@ interface BluetoothManagerInterface {
     fun enableNotifications(lampPublicId : String)
     fun disconnect()
     var onLedsDiscovered: ((List<DiscoveredLed>) -> Unit)?
+    var onConnectionStateChanged: ((connected: Boolean) -> Unit)?
     fun scanEsp32Device(onFound: (BluetoothDevice) -> Unit)
     fun getConnectedEsp32(onFound: (BluetoothDevice?) -> Unit)
     fun reconnectLastDevice(): Boolean

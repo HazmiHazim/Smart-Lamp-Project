@@ -5,6 +5,7 @@ import com.iot.android.smartlamp.data.repository.LampRepositoryInterface
 import com.iot.android.smartlamp.model.DiscoveredLed
 import com.iot.android.smartlamp.model.Lamp
 import com.iot.android.smartlamp.service.local.bluetooth.BluetoothManagerInterface
+import java.util.concurrent.Executors
 
 class LampService(
     private val bluetoothManager: BluetoothManagerInterface,
@@ -12,10 +13,14 @@ class LampService(
 ) : LampServiceInterface {
 
     private var updateCallback: ((List<Lamp>) -> Unit)? = null
+    private val dbExecutor = Executors.newSingleThreadExecutor()
 
     init {
         bluetoothManager.onLedsDiscovered = { discoveredLeds ->
-            registerDiscoveredLamps(discoveredLeds)
+            // DB operations on background thread
+            dbExecutor.execute {
+                registerDiscoveredLamps(discoveredLeds)
+            }
         }
     }
 
@@ -27,7 +32,6 @@ class LampService(
             val rxKey = led.rxUUID.toString()
 
             if (rxKey !in existingRxKeys) {
-                // Create new lamp entry for this LED
                 val lamp = Lamp(
                     publicId = rxKey,
                     name = "LED ${index + 1}",
@@ -40,11 +44,10 @@ class LampService(
                 lampRepo.insertLamp(lamp)
             }
 
-            // Register BLE mapping for this lamp (whether new or existing)
             bluetoothManager.registerLampMapping(rxKey, led)
         }
 
-        // Also re-register existing lamps that match discovered LEDs
+        // Re-register existing lamps that match discovered LEDs
         val allLamps = lampRepo.getAllLamps()
         for (lamp in allLamps) {
             val matchingLed = leds.find { it.rxUUID.toString() == lamp.rxKey }
@@ -53,7 +56,7 @@ class LampService(
             }
         }
 
-        updateCallback?.invoke(lampRepo.getAllLamps())
+        updateCallback?.invoke(allLamps)
     }
 
     override fun addLamp(lamp: Lamp) {

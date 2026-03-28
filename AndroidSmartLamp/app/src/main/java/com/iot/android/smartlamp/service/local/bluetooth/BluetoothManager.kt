@@ -1,7 +1,6 @@
 package com.iot.android.smartlamp.service.local.bluetooth
 
 import android.Manifest
-import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
@@ -11,24 +10,42 @@ import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.annotation.RequiresPermission
 import com.iot.android.smartlamp.model.DiscoveredLed
 import com.iot.android.smartlamp.model.LampBluetoothAddress
-import java.util.UUID
 
 class BluetoothManager(private val context: Context) : BluetoothManagerInterface {
 
     private var bluetoothGatt: BluetoothGatt? = null
     private val lampBLEAddressMap = mutableMapOf<String, LampBluetoothAddress>()
     override var onLedsDiscovered: ((List<DiscoveredLed>) -> Unit)? = null
+    override var onConnectionStateChanged: ((connected: Boolean) -> Unit)? = null
+
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val scanHandler = Handler(Looper.getMainLooper())
+    private var currentScanCallback: ScanCallback? = null
 
     private val prefs by lazy {
         context.getSharedPreferences("ble_prefs", Context.MODE_PRIVATE)
     }
 
+    private val adapter by lazy {
+        val manager = context.getSystemService(BluetoothManager::class.java)
+        manager.adapter
+    }
+
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     override fun connect(device: BluetoothDevice) {
+        // Close existing connection before creating a new one
+        bluetoothGatt?.let { gatt ->
+            gatt.disconnect()
+            gatt.close()
+            bluetoothGatt = null
+        }
+
         // Save MAC for auto-reconnect
         prefs.edit().putString("last_device_mac", device.address).apply()
 
@@ -36,9 +53,19 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
 
             @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-                if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    Log.d("BLE", "Connected to GATT server")
-                    gatt.discoverServices()
+                when (newState) {
+                    BluetoothProfile.STATE_CONNECTED -> {
+                        Log.d("BLE", "Connected to GATT server")
+                        mainHandler.post { onConnectionStateChanged?.invoke(true) }
+                        gatt.discoverServices()
+                    }
+                    BluetoothProfile.STATE_DISCONNECTED -> {
+                        Log.d("BLE", "Disconnected from GATT server")
+                        gatt.close()
+                        bluetoothGatt = null
+                        lampBLEAddressMap.clear()
+                        mainHandler.post { onConnectionStateChanged?.invoke(false) }
+                    }
                 }
             }
 
@@ -65,8 +92,6 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
                         }
                     }
 
-                    // ESP32 firmware creates pairs in order: tx0, rx0, tx1, rx1, tx2, rx2
-                    // So txChars and rxChars should have matching indices
                     if (rxChars.isNotEmpty() && txChars.isNotEmpty()) {
                         val pairCount = minOf(rxChars.size, txChars.size)
                         val discoveredLeds = mutableListOf<DiscoveredLed>()
@@ -83,7 +108,8 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
                         }
 
                         Log.d("BLE", "Discovered $pairCount LED(s)")
-                        onLedsDiscovered?.invoke(discoveredLeds)
+                        // Dispatch to main thread
+                        mainHandler.post { onLedsDiscovered?.invoke(discoveredLeds) }
                         return
                     }
                 }
@@ -113,18 +139,22 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     override fun writeData(lampPublicId: String, data: ByteArray) {
-        Log.d("BLE", "Map keys before write: ${lampBLEAddressMap.keys}")
         val address = lampBLEAddressMap[lampPublicId] ?: run {
             Log.e("BLE", "LED not found: $lampPublicId")
             return
         }
 
-        val char = bluetoothGatt?.getService(address.serviceAddress)?.getCharacteristic(address.receiverAddress)
-        if (char != null && bluetoothGatt != null) {
-            Log.d("COMMAND", "Command Successful!")
-            bluetoothGatt?.writeCharacteristic(char, data, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+        val gatt = bluetoothGatt ?: run {
+            Log.e("BLE", "GATT not connected")
+            return
+        }
+
+        val char = gatt.getService(address.serviceAddress)?.getCharacteristic(address.receiverAddress)
+        if (char != null) {
+            Log.d("COMMAND", "Writing to ${address.receiverAddress}: ${data.contentToString()}")
+            gatt.writeCharacteristic(char, data, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
         } else {
-            Log.e("BLE", "Characteristic or GATT not available")
+            Log.e("BLE", "Characteristic not available")
         }
     }
 
@@ -142,21 +172,29 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
         bluetoothGatt?.disconnect()
         bluetoothGatt?.close()
         bluetoothGatt = null
+        lampBLEAddressMap.clear()
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     override fun scanEsp32Device(onFound: (BluetoothDevice) -> Unit) {
-        val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-        val scanner = bluetoothAdapter.bluetoothLeScanner
+        val scanner = adapter.bluetoothLeScanner ?: run {
+            Log.e("BLE", "BLE scanner not available")
+            return
+        }
+
+        // Stop any ongoing scan
+        currentScanCallback?.let { scanner.stopScan(it) }
+
         val scanCallback = object : ScanCallback() {
             @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT])
             override fun onScanResult(callbackType: Int, result: ScanResult) {
                 val device = result.device
-                val scanRecord = result.scanRecord
-                val advertisedName = scanRecord?.deviceName
+                val advertisedName = result.scanRecord?.deviceName
                 Log.d("BLE", "Device found: $advertisedName")
                 if (advertisedName?.contains("ESP32", ignoreCase = true) == true) {
                     scanner.stopScan(this)
+                    scanHandler.removeCallbacksAndMessages(null)
+                    currentScanCallback = null
                     onFound(device)
                 }
             }
@@ -164,10 +202,21 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
             @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
             override fun onScanFailed(errorCode: Int) {
                 scanner.stopScan(this)
+                scanHandler.removeCallbacksAndMessages(null)
+                currentScanCallback = null
                 Log.e("BLE", "Scan failed: $errorCode")
             }
         }
+
+        currentScanCallback = scanCallback
         scanner.startScan(scanCallback)
+
+        // Timeout after 10 seconds
+        scanHandler.postDelayed({
+            scanner.stopScan(scanCallback)
+            currentScanCallback = null
+            Log.d("BLE", "Scan timed out after 10 seconds")
+        }, 10_000)
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
@@ -198,7 +247,6 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     override fun reconnectLastDevice(): Boolean {
         val mac = prefs.getString("last_device_mac", null) ?: return false
-        val adapter = BluetoothAdapter.getDefaultAdapter() ?: return false
 
         return try {
             val device = adapter.getRemoteDevice(mac)

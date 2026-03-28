@@ -11,12 +11,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.cardview.widget.CardView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.facebook.shimmer.ShimmerFrameLayout
-import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.iot.android.smartlamp.DependencyContainer
 import com.iot.android.smartlamp.R
 import com.iot.android.smartlamp.adapter.LampAdapter
@@ -68,7 +69,7 @@ class Home : Fragment(R.layout.home) {
         recyclerView = view.findViewById(R.id.home_recyclerview)
         emptyCard = view.findViewById(R.id.home_lamp_empty_card)
         emptyCardBulb = view.findViewById(R.id.home_lamp_empty_card_bulb)
-        lampAdapter = LampAdapter(mutableListOf()) { lamp -> openLampDetail(lamp) }
+        lampAdapter = LampAdapter(emptyList()) { lamp -> openLampDetail(lamp) }
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = lampAdapter
 
@@ -85,13 +86,16 @@ class Home : Fragment(R.layout.home) {
         lampVM.lampList.observe(viewLifecycleOwner) { list ->
             shimmerLayout.startShimmer()
             swipeRefresh.visibility = View.GONE
+
             viewLifecycleOwner.lifecycleScope.launch {
-                delay(3000)
-                shimmerLayout.stopShimmer()
-                shimmerLayout.visibility = View.GONE
-                swipeRefresh.visibility = View.VISIBLE
-                lampAdapter.updateList(list)
-                updateLampCardState(list)
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    delay(3000)
+                    shimmerLayout.stopShimmer()
+                    shimmerLayout.visibility = View.GONE
+                    swipeRefresh.visibility = View.VISIBLE
+                    lampAdapter.updateList(list)
+                    updateLampCardState(list)
+                }
             }
         }
     }

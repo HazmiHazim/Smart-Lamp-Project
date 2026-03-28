@@ -11,7 +11,11 @@ import com.iot.android.smartlamp.service.local.bluetooth.BluetoothManagerInterfa
 
 object DependencyContainer {
     private var appDatabase : AppDatabase? = null
+
+    @Volatile
     private var bluetoothManager : BluetoothManagerInterface? = null
+
+    @Volatile
     private var lampService: LampServiceInterface? = null
 
     fun initDatabase(context : Context) {
@@ -23,17 +27,21 @@ object DependencyContainer {
     }
 
     private fun provideBluetoothManager(context: Context) : BluetoothManagerInterface {
-        if (bluetoothManager == null) {
-            bluetoothManager = BluetoothManager(context.applicationContext)
+        return bluetoothManager ?: synchronized(this) {
+            bluetoothManager ?: BluetoothManager(context.applicationContext).also {
+                bluetoothManager = it
+            }
         }
-        return bluetoothManager!!
     }
 
     fun provideLampService(context: Context) : LampServiceInterface {
-        if (lampService == null) {
-            val bluetoothManager = provideBluetoothManager(context)
-            lampService = LampService(bluetoothManager, lampRepository)
+        return lampService ?: synchronized(this) {
+            lampService ?: LampService(
+                provideBluetoothManager(context),
+                lampRepository
+            ).also {
+                lampService = it
+            }
         }
-        return lampService!!
     }
 }
