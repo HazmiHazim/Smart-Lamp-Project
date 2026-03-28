@@ -46,7 +46,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:padding="12dp"
-            android:contentDescription="@string/label_button_add_lamp"
+            android:contentDescription="@string/bulb"
             android:src="@drawable/outline_add"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"

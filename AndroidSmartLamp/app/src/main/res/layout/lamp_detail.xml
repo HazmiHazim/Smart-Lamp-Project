@@ -34,7 +34,7 @@
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:padding="12dp"
-                    android:contentDescription="@string/label_button_add_lamp"
+                    android:contentDescription="@string/lamp_detail_nav_icon"
                     android:src="@drawable/left_arrow"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"

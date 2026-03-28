@@ -1,31 +1,16 @@
 <resources>
     <string name="app_name">Android Smart Lamp</string>
     <string name="main_label">Smart Lamp</string>
-    <string name="analytics_label">Analytics</string>
-    <string name="register_device">Register Device</string>
-    <string name="scan_device">Scan Device</string>
     <string name="bulb">Bulb</string>
     <string name="close">Close Icon</string>
     <string name="lamp_detail_nav_icon">Lamp Detail Navigation Icon</string>
-    <string name="label_input_lamp_id">Lamp ID</string>
-    <string name="label_input_lamp_name">Lamp Name</string>
-    <string name="label_input_lamp_model">Lamp Model</string>
-    <string name="label_button_add_lamp">Register Device</string>
     <string name="bottom_nav_home">Home</string>
-    <string name="bottom_nav_analytics">Analytics</string>
-    <string name="bottom_nav_setting">Setting</string>
     <string name="home_description">Seamless control for a brighter home</string>
-    <string name="setting_description">Manage your lamp by using voice command</string>
-    <string name="analytics_description">Analyze your daily lamp usage trends</string>
     <string name="not_applicable">N/A</string>
     <string name="delete_lamp_btn">Remove Device</string>
     <string name="apply_colour_btn">Apply Colour</string>
     <string name="detail_device">Detail Device</string>
     <string name="empty_list_card">No Lamp Yet</string>
     <string name="connected_device_title">Connected Device:</string>
-    <string name="voice_command">Voice Command</string>
-    <string name="preferences">Preferences</string>
-    <string name="help_and_feedback">Help &amp; Feedback</string>
-    <string name="setting_detail_nav_icon">Setting Detail Navigation Icon</string>
-    <string name="app_version">V1.0.0</string>
+    <string name="app_version">V2.0.0</string>
 </resources>

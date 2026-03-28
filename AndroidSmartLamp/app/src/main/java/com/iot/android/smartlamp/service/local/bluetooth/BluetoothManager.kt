@@ -6,7 +6,6 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
-import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.ScanCallback
@@ -14,18 +13,25 @@ import android.bluetooth.le.ScanResult
 import android.content.Context
 import android.util.Log
 import androidx.annotation.RequiresPermission
-import com.iot.android.smartlamp.data.repository.LampRepositoryInterface
+import com.iot.android.smartlamp.model.DiscoveredLed
 import com.iot.android.smartlamp.model.LampBluetoothAddress
 import java.util.UUID
 
-class BluetoothManager(private val context : Context, private val lampRepo: LampRepositoryInterface) : BluetoothManagerInterface {
+class BluetoothManager(private val context: Context) : BluetoothManagerInterface {
 
     private var bluetoothGatt: BluetoothGatt? = null
     private val lampBLEAddressMap = mutableMapOf<String, LampBluetoothAddress>()
-    override var eventListener: ((serviceKey: String) -> Unit)? = null
+    override var onLedsDiscovered: ((List<DiscoveredLed>) -> Unit)? = null
+
+    private val prefs by lazy {
+        context.getSharedPreferences("ble_prefs", Context.MODE_PRIVATE)
+    }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    override fun connect(device : BluetoothDevice) {
+    override fun connect(device: BluetoothDevice) {
+        // Save MAC for auto-reconnect
+        prefs.edit().putString("last_device_mac", device.address).apply()
+
         bluetoothGatt = device.connectGatt(context, false, object : BluetoothGattCallback() {
 
             @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
@@ -37,63 +43,52 @@ class BluetoothManager(private val context : Context, private val lampRepo: Lamp
             }
 
             override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
-                if (status == BluetoothGatt.GATT_SUCCESS) {
-                    Log.d("BLE", "Services discovered, count: ${gatt.services.size}")
-
-                    var foundService: BluetoothGattService? = null
-                    var rx: UUID? = null
-                    var tx: UUID? = null
-
-                    // First, find the correct service and characteristics
-                    for (service in gatt.services) {
-                        Log.d("BLE", "Service: ${service.uuid}")
-
-                        var serviceRx: UUID? = null
-                        var serviceTx: UUID? = null
-
-                        service.characteristics.forEach { characteristic ->
-                            Log.d("BLE", "  Characteristic: ${characteristic.uuid}, Properties: ${characteristic.properties}")
-                            if (characteristic.properties and BluetoothGattCharacteristic.PROPERTY_WRITE != 0) {
-                                serviceRx = characteristic.uuid
-                                Log.d("BLE", "    Found RX characteristic: $serviceRx")
-                            } else if (characteristic.properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY != 0) {
-                                serviceTx = characteristic.uuid
-                                Log.d("BLE", "    Found TX characteristic: $serviceTx")
-                            }
-                        }
-
-                        if (serviceRx != null && serviceTx != null) {
-                            foundService = service
-                            rx = serviceRx
-                            tx = serviceTx
-                            Log.d("BLE", "Found compatible service: ${service.uuid}")
-                            break // Found what we need, stop searching
-                        }
-                    }
-
-                    // Only populate the map if we found a valid service
-                    if (foundService != null && rx != null && tx != null) {
-                        val lamps = lampRepo.getAllLamps()
-                        Log.d("BLE", "Populating map with ${lamps.size} lamps")
-
-                        lamps.forEach { lamp ->
-                            lampBLEAddressMap[lamp.publicId] = LampBluetoothAddress(
-                                lampId = lamp.publicId,
-                                serviceAddress = foundService.uuid,
-                                transmitterAddress = tx,
-                                receiverAddress = rx
-                            )
-                            Log.d("BLE", "Map entry: ${lamp.publicId} -> ${foundService.uuid} / $tx / $rx")
-                        }
-
-                        Log.d("BLE", "Map population complete. Total entries: ${lampBLEAddressMap.size}")
-                        eventListener?.invoke(foundService.uuid.toString())
-                    } else {
-                        Log.e("BLE", "No compatible service found with both RX and TX characteristics")
-                    }
-                } else {
+                if (status != BluetoothGatt.GATT_SUCCESS) {
                     Log.e("BLE", "Service discovery failed with status: $status")
+                    return
                 }
+
+                Log.d("BLE", "Services discovered, count: ${gatt.services.size}")
+
+                for (service in gatt.services) {
+                    Log.d("BLE", "Service: ${service.uuid}")
+
+                    val rxChars = mutableListOf<BluetoothGattCharacteristic>()
+                    val txChars = mutableListOf<BluetoothGattCharacteristic>()
+
+                    for (characteristic in service.characteristics) {
+                        Log.d("BLE", "  Characteristic: ${characteristic.uuid}, Properties: ${characteristic.properties}")
+                        if (characteristic.properties and BluetoothGattCharacteristic.PROPERTY_WRITE != 0) {
+                            rxChars.add(characteristic)
+                        } else if (characteristic.properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY != 0) {
+                            txChars.add(characteristic)
+                        }
+                    }
+
+                    // ESP32 firmware creates pairs in order: tx0, rx0, tx1, rx1, tx2, rx2
+                    // So txChars and rxChars should have matching indices
+                    if (rxChars.isNotEmpty() && txChars.isNotEmpty()) {
+                        val pairCount = minOf(rxChars.size, txChars.size)
+                        val discoveredLeds = mutableListOf<DiscoveredLed>()
+
+                        for (i in 0 until pairCount) {
+                            discoveredLeds.add(
+                                DiscoveredLed(
+                                    serviceUUID = service.uuid,
+                                    rxUUID = rxChars[i].uuid,
+                                    txUUID = txChars[i].uuid
+                                )
+                            )
+                            Log.d("BLE", "LED $i: service=${service.uuid}, rx=${rxChars[i].uuid}, tx=${txChars[i].uuid}")
+                        }
+
+                        Log.d("BLE", "Discovered $pairCount LED(s)")
+                        onLedsDiscovered?.invoke(discoveredLeds)
+                        return
+                    }
+                }
+
+                Log.e("BLE", "No compatible service found with RX/TX characteristics")
             }
 
             override fun onCharacteristicChanged(
@@ -106,11 +101,21 @@ class BluetoothManager(private val context : Context, private val lampRepo: Lamp
         })
     }
 
+    override fun registerLampMapping(lampPublicId: String, led: DiscoveredLed) {
+        lampBLEAddressMap[lampPublicId] = LampBluetoothAddress(
+            lampId = lampPublicId,
+            serviceAddress = led.serviceUUID,
+            transmitterAddress = led.txUUID,
+            receiverAddress = led.rxUUID
+        )
+        Log.d("BLE", "Registered mapping: $lampPublicId -> rx=${led.rxUUID}")
+    }
+
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    override fun writeData(lampPublicId : String, data : ByteArray) {
+    override fun writeData(lampPublicId: String, data: ByteArray) {
         Log.d("BLE", "Map keys before write: ${lampBLEAddressMap.keys}")
         val address = lampBLEAddressMap[lampPublicId] ?: run {
-            Log.e("BLE", "LED not found: $lampBLEAddressMap")
+            Log.e("BLE", "LED not found: $lampPublicId")
             return
         }
 
@@ -124,7 +129,7 @@ class BluetoothManager(private val context : Context, private val lampRepo: Lamp
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    override fun enableNotifications(lampPublicId : String) {
+    override fun enableNotifications(lampPublicId: String) {
         val address = lampBLEAddressMap[lampPublicId] ?: return
         val txChar = bluetoothGatt?.getService(address.serviceAddress)?.getCharacteristic(address.transmitterAddress)
         if (txChar != null) {
@@ -186,8 +191,24 @@ class BluetoothManager(private val context : Context, private val lampRepo: Lamp
             }
         }
 
-        // No ESP32 found
         Log.d("BLE", "No connected ESP32 device found")
         onFound(null)
+    }
+
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    override fun reconnectLastDevice(): Boolean {
+        val mac = prefs.getString("last_device_mac", null) ?: return false
+        val adapter = BluetoothAdapter.getDefaultAdapter() ?: return false
+
+        return try {
+            val device = adapter.getRemoteDevice(mac)
+            Log.d("BLE", "Attempting reconnect to $mac")
+            connect(device)
+            true
+        } catch (e: IllegalArgumentException) {
+            Log.e("BLE", "Invalid MAC address: $mac")
+            prefs.edit().remove("last_device_mac").apply()
+            false
+        }
     }
 }

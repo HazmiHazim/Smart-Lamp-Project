@@ -22,9 +22,9 @@ object DependencyContainer {
         LampRepository(appDatabase!!)
     }
 
-    private fun provideBluetoothManager(context:  Context) : BluetoothManagerInterface {
+    private fun provideBluetoothManager(context: Context) : BluetoothManagerInterface {
         if (bluetoothManager == null) {
-            bluetoothManager = BluetoothManager(context.applicationContext, lampRepository)
+            bluetoothManager = BluetoothManager(context.applicationContext)
         }
         return bluetoothManager!!
     }

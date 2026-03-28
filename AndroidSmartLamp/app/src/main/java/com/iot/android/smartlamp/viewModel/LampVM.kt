@@ -13,12 +13,10 @@ class LampVM(private val lampService : LampServiceInterface) : ViewModel() {
     val lampList : LiveData<MutableList<Lamp>> get() = _lampList
 
     init {
-        // Subscribe to service events for UI updates
         lampService.onLampUpdate { updatedLampList ->
-            _lampList.value = updatedLampList.toMutableList()
+            _lampList.postValue(updatedLampList.toMutableList())
         }
 
-        // Fetch current data from the service
         val currentList = lampService.getAllLamps()
         _lampList.value = currentList?.toMutableList()
     }
@@ -41,7 +39,6 @@ class LampVM(private val lampService : LampServiceInterface) : ViewModel() {
     fun toggleLampState(lampId: Int, lampState: Boolean) {
         lampService.updateLampState(lampId, lampState)
 
-        // Update LiveData immediately for UI responsiveness
         _lampList.value = _lampList.value?.map { lamp ->
             if (lamp.id == lampId) lamp.copy(state = lampState) else lamp
         }?.toMutableList()
@@ -63,6 +60,10 @@ class LampVM(private val lampService : LampServiceInterface) : ViewModel() {
 
     fun getConnectedDevice(onFound : (BluetoothDevice?) -> Unit) {
         lampService.getConnectedDevice(onFound)
+    }
+
+    fun reconnectLastDevice() {
+        lampService.reconnectLastDevice()
     }
 
     fun turnOnCommand(lampPublicId : String) {

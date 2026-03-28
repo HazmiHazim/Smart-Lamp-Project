@@ -12,6 +12,7 @@ interface LampServiceInterface {
     fun connectToLamp(device : BluetoothDevice)
     fun scanForDevice(onFound : (BluetoothDevice) -> Unit)
     fun getConnectedDevice(onFound : (BluetoothDevice?) -> Unit)
+    fun reconnectLastDevice(): Boolean
     fun turnOnCommand(lampPublicId : String)
     fun turnOffCommand(lampPublicId : String)
     fun setBrightnessCommand(lampPublicId : String, brightness : Int)
