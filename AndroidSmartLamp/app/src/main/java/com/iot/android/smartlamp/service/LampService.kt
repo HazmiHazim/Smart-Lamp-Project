@@ -36,7 +36,7 @@ class LampService(
                     name = "LED ${index + 1}",
                     model = "ESP32-Smart-Lamp",
                     state = false,
-                    colour = "No Colour Yet",
+                    colour = "White",
                     txKey = led.txUUID.toString(),
                     rxKey = rxKey
                 )
@@ -75,6 +75,11 @@ class LampService(
         updateCallback?.invoke(lampRepo.getAllLamps())
     }
 
+    override fun updateLampColour(lampId: Int, colour: String) {
+        lampRepo.updateLampColour(lampId, colour)
+        updateCallback?.invoke(lampRepo.getAllLamps())
+    }
+
     override fun deleteLamp(id: Int) {
         lampRepo.deleteLamp(id)
         updateCallback?.invoke(lampRepo.getAllLamps())
@@ -84,8 +89,8 @@ class LampService(
         bluetoothManager.connect(device)
     }
 
-    override fun scanForDevice(onFound: (BluetoothDevice) -> Unit) {
-        bluetoothManager.scanEsp32Device(onFound)
+    override fun scanForDevice(onFound: (BluetoothDevice) -> Unit, onScanComplete: () -> Unit) {
+        bluetoothManager.scanEsp32Device(onFound, onScanComplete)
     }
 
     override fun getConnectedDevice(onFound: (BluetoothDevice?) -> Unit) {

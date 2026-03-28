@@ -8,9 +8,10 @@ interface LampServiceInterface {
     fun getAllLamps() : List<Lamp>?
     fun getLampById(id : Int) : Lamp?
     fun updateLampState(lampId : Int, state : Boolean)
+    fun updateLampColour(lampId : Int, colour : String)
     fun deleteLamp(id : Int)
     fun connectToLamp(device : BluetoothDevice)
-    fun scanForDevice(onFound : (BluetoothDevice) -> Unit)
+    fun scanForDevice(onFound : (BluetoothDevice) -> Unit, onScanComplete: () -> Unit = {})
     fun getConnectedDevice(onFound : (BluetoothDevice?) -> Unit)
     fun reconnectLastDevice(): Boolean
     fun turnOnCommand(lampPublicId : String)

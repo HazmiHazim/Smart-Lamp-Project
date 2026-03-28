@@ -4,7 +4,6 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.app.Activity
-import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Color
@@ -23,23 +22,19 @@ import androidx.cardview.widget.CardView
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.switchmaterial.SwitchMaterial
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import com.iot.android.smartlamp.R
 import com.iot.android.smartlamp.di.DependencyContainer
 import com.iot.android.smartlamp.service.LampServiceInterface
+import com.iot.android.smartlamp.util.ColorUtils
 import com.skydoves.colorpickerview.ColorPickerView
 import com.skydoves.colorpickerview.listeners.ColorEnvelopeListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class LampDetailActivity : AppCompatActivity() {
 
     private lateinit var backBtn : ImageView
     private lateinit var lampNameLabelText : TextView
-    private lateinit var lampModelLabelText : TextView
-    private lateinit var colourAppliedLabelText : TextView
     private lateinit var switch : SwitchMaterial
     private lateinit var switchState : TextView
     private lateinit var brightnessCard : CardView
@@ -49,30 +44,23 @@ class LampDetailActivity : AppCompatActivity() {
     private lateinit var colourPicker : ColorPickerView
     private lateinit var colourAppliedBtn : MaterialButton
     private lateinit var removeBtn : MaterialButton
-    private var selectedColourHexCode : String = ""
     private var selectedRedCode : Int = 0
     private var selectedGreenCode : Int = 0
     private var selectedBlueCode : Int = 0
     private var lampStateIsChecked : Boolean = false
+    private var currentColourName : String = "White"
 
     private lateinit var lampService: LampServiceInterface
 
-    private var colourMap: Map<String, String>? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        supportActionBar?.hide()
         setContentView(R.layout.lamp_detail)
-
-        if (savedInstanceState == null) {
-            supportActionBar?.hide()
-        }
 
         lampService = DependencyContainer.provideLampService(this)
 
         backBtn = findViewById(R.id.lamp_detail_back_button)
         lampNameLabelText = findViewById(R.id.lamp_detail_label_name)
-        lampModelLabelText = findViewById(R.id.lamp_detail_label_model)
-        colourAppliedLabelText = findViewById(R.id.lamp_detail_label_colour)
         switch = findViewById(R.id.lamp_switch)
         switchState = findViewById(R.id.switch_state)
         brightnessCard = findViewById(R.id.brightness_card)
@@ -83,15 +71,16 @@ class LampDetailActivity : AppCompatActivity() {
         colourAppliedBtn = findViewById(R.id.lamp_detail_selected_colour_button)
         removeBtn = findViewById(R.id.lamp_detail_delete_button)
 
+        ColorUtils.loadColors(this)
+
         val lampId = intent.getIntExtra("lamp_id", -1)
         val lampPublicId = intent.getStringExtra("lamp_public_id") ?: ""
         val lampName = intent.getStringExtra("lamp_name") ?: ""
-        val lampModel = intent.getStringExtra("lamp_model") ?: ""
         val lampState = intent.getBooleanExtra("lamp_state", false)
+        currentColourName = intent.getStringExtra("lamp_colour") ?: "White"
         lampStateIsChecked = lampState
 
         lampNameLabelText.text = lampName
-        lampModelLabelText.text = lampModel
         switch.isChecked = lampState
         updateSwitchUI(lampState)
 
@@ -102,16 +91,11 @@ class LampDetailActivity : AppCompatActivity() {
             brightnessLabelText.text = "100%"
         }
 
-        lifecycleScope.launch {
-            colourMap = withContext(Dispatchers.IO) {
-                loadColourMap(this@LampDetailActivity)
-            }
-        }
-
         backBtn.setOnClickListener {
             val resultIntent = Intent().apply {
                 putExtra("updated_lamp_id", lampId)
                 putExtra("updated_lamp_state", lampStateIsChecked)
+                putExtra("updated_lamp_colour", currentColourName)
             }
             setResult(Activity.RESULT_FIRST_USER, resultIntent)
             finish()
@@ -120,7 +104,8 @@ class LampDetailActivity : AppCompatActivity() {
         switch.setOnCheckedChangeListener { _, isChecked ->
             lampStateIsChecked = isChecked
             if (isChecked) {
-                lampService.turnOnCommand(lampPublicId)
+                val (r, g, b) = ColorUtils.getRgbFromColorName(currentColourName)
+                lampService.setColorCommand(lampPublicId, r, g, b)
                 updateSwitchUI(true)
                 brightnessSeekBar.progress = 255
                 brightnessLabelText.text = "100%"
@@ -157,16 +142,21 @@ class LampDetailActivity : AppCompatActivity() {
             selectedRedCode = Color.red(color)
             selectedGreenCode = Color.green(color)
             selectedBlueCode = Color.blue(color)
-            selectedColourHexCode = String.format("#%06X", 0xFFFFFF and envelope.color)
         })
+
+        val (initR, initG, initB) = ColorUtils.getRgbFromColorName(currentColourName)
+        selectedRedCode = initR
+        selectedGreenCode = initG
+        selectedBlueCode = initB
+        colourPicker.setInitialColor(Color.rgb(initR, initG, initB))
 
         colourAppliedBtn.setOnClickListener {
             lampService.setColorCommand(lampPublicId, selectedRedCode, selectedGreenCode, selectedBlueCode)
-            val colorName = colourMap?.entries
-                ?.firstOrNull { it.value.equals(selectedColourHexCode, ignoreCase = true) }
-                ?.key
-            colourAppliedLabelText.text = colorName ?: selectedColourHexCode
-            Toast.makeText(this, "Colour Applied", Toast.LENGTH_LONG).show()
+            currentColourName = ColorUtils.findClosestColorName(selectedRedCode, selectedGreenCode, selectedBlueCode)
+            lifecycleScope.launch(Dispatchers.IO) {
+                lampService.updateLampColour(lampId, currentColourName)
+            }
+            Toast.makeText(this, "Colour Applied: $currentColourName", Toast.LENGTH_LONG).show()
         }
 
         removeBtn.setOnClickListener {
@@ -242,12 +232,5 @@ class LampDetailActivity : AppCompatActivity() {
         animator.interpolator = AccelerateInterpolator()
         animator.duration = 300
         animator.start()
-    }
-
-    private fun loadColourMap(context: Context): Map<String, String> {
-        val inputStream = context.resources.openRawResource(R.raw.colors)
-        val json = inputStream.bufferedReader().use { it.readText() }
-        val type = object : TypeToken<Map<String, String>>() {}.type
-        return Gson().fromJson(json, type)
     }
 }

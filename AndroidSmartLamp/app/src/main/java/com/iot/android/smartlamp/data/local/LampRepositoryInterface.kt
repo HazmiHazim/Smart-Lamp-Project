@@ -8,5 +8,6 @@ interface LampRepositoryInterface {
     fun insertLamp(lamp : Lamp) : String
     fun updateLamp(lamp : Lamp) : String
     fun updateLampState(id : Int, state : Boolean)
+    fun updateLampColour(id : Int, colour : String)
     fun deleteLamp(id : Int) : Unit
 }

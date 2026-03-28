@@ -122,6 +122,14 @@ class LampRepository(private val db : AppDatabase) : LampRepositoryInterface  {
         )
     }
 
+    override fun updateLampColour(id : Int, colour : String) {
+        val values = ContentValues().apply {
+            put("colour", colour)
+            put("modified_at", System.currentTimeMillis())
+        }
+        db.writableDatabase.update("lamps", values, "id = ?", arrayOf(id.toString()))
+    }
+
     override fun deleteLamp(id : Int) : Unit {
         db.writableDatabase.delete("lamps", "id = ?", arrayOf(id.toString()))
     }

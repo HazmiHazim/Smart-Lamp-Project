@@ -20,12 +20,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        supportActionBar?.hide()
         setContentView(R.layout.main)
 
         checkBluetoothPermission()
 
         if (savedInstanceState == null) {
-            supportActionBar?.hide()
             supportFragmentManager.beginTransaction().setReorderingAllowed(true)
                 .replace(R.id.fragment_container, Home()).commit()
         }
@@ -64,6 +64,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun onBluetoothPermissionGranted() {
         lampVM.reconnectLastDevice()
+        val homeFragment = supportFragmentManager.findFragmentById(R.id.fragment_container) as? Home
+        homeFragment?.onPermissionGranted()
     }
 
     override fun onDestroy() {

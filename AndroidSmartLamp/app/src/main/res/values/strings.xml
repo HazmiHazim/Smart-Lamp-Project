@@ -12,6 +12,7 @@
     <string name="detail_device">Detail Device</string>
     <string name="empty_list_card">No Lamp Yet</string>
     <string name="scanning_message">Scanning for devices...</string>
+    <string name="no_device_found">No device found. Pull down to scan again.</string>
     <string name="connected_device_title">Connected Device:</string>
     <string name="app_version">V2.0.0</string>
 </resources>

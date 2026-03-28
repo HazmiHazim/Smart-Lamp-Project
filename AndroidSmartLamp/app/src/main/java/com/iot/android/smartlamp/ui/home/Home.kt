@@ -1,18 +1,21 @@
 package com.iot.android.smartlamp.ui.home
 
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.cardview.widget.CardView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.facebook.shimmer.ShimmerFrameLayout
@@ -24,8 +27,6 @@ import com.iot.android.smartlamp.ui.detail.LampDetailActivity
 import com.iot.android.smartlamp.ui.LampVM
 import com.iot.android.smartlamp.ui.LampVMFactory
 import com.iot.android.smartlamp.util.ScreenUtils
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 class Home : Fragment(R.layout.home) {
 
@@ -35,6 +36,7 @@ class Home : Fragment(R.layout.home) {
     private lateinit var recyclerView : RecyclerView
     private lateinit var emptyCard : CardView
     private lateinit var emptyCardBulb : ImageView
+    private lateinit var emptyCardText : TextView
     private lateinit var lampAdapter : LampAdapter
     private val lampVM: LampVM by activityViewModels {
         LampVMFactory(DependencyContainer.provideLampService(requireActivity()))
@@ -51,7 +53,11 @@ class Home : Fragment(R.layout.home) {
             Activity.RESULT_FIRST_USER -> {
                 val updatedId = result.data?.getIntExtra("updated_lamp_id", -1) ?: -1
                 val updatedState = result.data?.getBooleanExtra("updated_lamp_state", false) ?: false
-                if (updatedId != -1) lampVM.toggleLampState(updatedId, updatedState)
+                val updatedColour = result.data?.getStringExtra("updated_lamp_colour") ?: ""
+                if (updatedId != -1) {
+                    lampVM.toggleLampState(updatedId, updatedState)
+                    if (updatedColour.isNotEmpty()) lampVM.updateLampColour(updatedId, updatedColour)
+                }
             }
         }
     }
@@ -65,6 +71,7 @@ class Home : Fragment(R.layout.home) {
         recyclerView = view.findViewById(R.id.home_recyclerview)
         emptyCard = view.findViewById(R.id.home_lamp_empty_card)
         emptyCardBulb = view.findViewById(R.id.home_lamp_empty_card_bulb)
+        emptyCardText = view.findViewById(R.id.home_lamp_empty_card_text)
         lampAdapter = LampAdapter(emptyList()) { lamp -> openLampDetail(lamp) }
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = lampAdapter
@@ -72,8 +79,12 @@ class Home : Fragment(R.layout.home) {
         ScreenUtils.resizeImage(emptyCardBulb, 100)
 
         swipeRefresh.setOnRefreshListener {
-            Toast.makeText(requireContext(), "Scanning for devices...", Toast.LENGTH_SHORT).show()
-            scanForDevices()
+            if (hasBluetoothPermission()) {
+                Toast.makeText(requireContext(), "Scanning for devices...", Toast.LENGTH_SHORT).show()
+                scanForDevices()
+            } else {
+                Toast.makeText(requireContext(), "Bluetooth permission required", Toast.LENGTH_SHORT).show()
+            }
             swipeRefresh.isRefreshing = false
         }
 
@@ -82,24 +93,18 @@ class Home : Fragment(R.layout.home) {
         if (hasExistingData) {
             shimmerLayout.visibility = View.GONE
             swipeRefresh.visibility = View.VISIBLE
-        } else {
+        } else if (hasBluetoothPermission()) {
             scanForDevices()
+        } else {
+            shimmerLayout.stopShimmer()
+            shimmerLayout.visibility = View.GONE
+            swipeRefresh.visibility = View.VISIBLE
+            emptyCardText.setText(R.string.no_device_found)
         }
 
         lampVM.lampList.observe(viewLifecycleOwner) { list ->
-            if (shimmerLayout.visibility == View.VISIBLE) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    delay(3000)
-                    shimmerLayout.stopShimmer()
-                    shimmerLayout.visibility = View.GONE
-                    swipeRefresh.visibility = View.VISIBLE
-                    lampAdapter.updateList(list)
-                    updateLampCardState(list)
-                }
-            } else {
-                lampAdapter.updateList(list)
-                updateLampCardState(list)
-            }
+            lampAdapter.updateList(list)
+            updateLampCardState(list)
         }
     }
 
@@ -113,10 +118,48 @@ class Home : Fragment(R.layout.home) {
         }
     }
 
-    private fun scanForDevices() {
-        lampVM.scanForDevice { device ->
-            lampVM.connectToLamp(device)
+    private fun hasBluetoothPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_SCAN) ==
+                PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_CONNECT) ==
+                PackageManager.PERMISSION_GRANTED
+    }
+
+    fun onPermissionGranted() {
+        if (lampVM.lampList.value.isNullOrEmpty()) {
+            shimmerLayout.visibility = View.VISIBLE
+            shimmerLayout.startShimmer()
+            swipeRefresh.visibility = View.GONE
+            scanForDevices()
         }
+    }
+
+    private var deviceFound = false
+
+    private fun scanForDevices() {
+        deviceFound = false
+        lampVM.scanForDevice(
+            onFound = { device ->
+                lampVM.connectToLamp(device)
+                if (!deviceFound) {
+                    deviceFound = true
+                    requireActivity().runOnUiThread {
+                        Toast.makeText(requireContext(), "Device found", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
+            onScanComplete = {
+                requireActivity().runOnUiThread {
+                    shimmerLayout.stopShimmer()
+                    shimmerLayout.visibility = View.GONE
+                    swipeRefresh.visibility = View.VISIBLE
+                    if (!deviceFound) {
+                        emptyCardText.setText(R.string.no_device_found)
+                        Toast.makeText(requireContext(), "No device found", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        )
     }
 
     private fun openLampDetail(lamp : Lamp) {
@@ -124,10 +167,8 @@ class Home : Fragment(R.layout.home) {
             putExtra("lamp_id", lamp.id)
             putExtra("lamp_public_id", lamp.publicId)
             putExtra("lamp_name", lamp.name)
-            putExtra("lamp_model", lamp.model)
             putExtra("lamp_state", lamp.state)
             putExtra("lamp_colour", lamp.colour)
-            putExtra("lamp_brightness", lamp.brightness)
         }
         lampDetailLauncher.launch(intent)
     }

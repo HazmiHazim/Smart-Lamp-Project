@@ -265,9 +265,10 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
-    override fun scanEsp32Device(onFound: (BluetoothDevice) -> Unit) {
+    override fun scanEsp32Device(onFound: (BluetoothDevice) -> Unit, onScanComplete: () -> Unit) {
         val scanner = adapter.bluetoothLeScanner ?: run {
             Log.e("BLE", "BLE scanner not available")
+            mainHandler.post { onScanComplete() }
             return
         }
 
@@ -284,6 +285,7 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
                     scanHandler.removeCallbacksAndMessages(null)
                     currentScanCallback = null
                     onFound(device)
+                    mainHandler.post { onScanComplete() }
                 }
             }
 
@@ -293,6 +295,7 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
                 scanHandler.removeCallbacksAndMessages(null)
                 currentScanCallback = null
                 Log.e("BLE", "Scan failed: $errorCode")
+                mainHandler.post { onScanComplete() }
             }
         }
 
@@ -303,6 +306,7 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
             scanner.stopScan(scanCallback)
             currentScanCallback = null
             Log.d("BLE", "Scan timed out after 10 seconds")
+            mainHandler.post { onScanComplete() }
         }, 10_000)
     }
 

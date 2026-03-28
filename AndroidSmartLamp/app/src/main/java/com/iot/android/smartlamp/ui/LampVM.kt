@@ -51,6 +51,16 @@ class LampVM(private val lampService : LampServiceInterface) : ViewModel() {
         }
     }
 
+    fun updateLampColour(lampId: Int, colour: String) {
+        _lampList.postValue(_lampList.value?.map { lamp ->
+            if (lamp.id == lampId) lamp.copy(colour = colour) else lamp
+        } ?: emptyList())
+
+        viewModelScope.launch(Dispatchers.IO) {
+            lampService.updateLampColour(lampId, colour)
+        }
+    }
+
     fun updateBrightness(lampId : Int, brightness : Int) {
         _lampList.postValue(_lampList.value?.map { lamp ->
             if (lamp.id == lampId) lamp.copy(brightness = brightness) else lamp
@@ -61,8 +71,8 @@ class LampVM(private val lampService : LampServiceInterface) : ViewModel() {
         lampService.connectToLamp(device)
     }
 
-    fun scanForDevice(onFound : (BluetoothDevice) -> Unit) {
-        lampService.scanForDevice(onFound)
+    fun scanForDevice(onFound : (BluetoothDevice) -> Unit, onScanComplete: () -> Unit = {}) {
+        lampService.scanForDevice(onFound, onScanComplete)
     }
 
     fun getConnectedDevice(onFound : (BluetoothDevice?) -> Unit) {
