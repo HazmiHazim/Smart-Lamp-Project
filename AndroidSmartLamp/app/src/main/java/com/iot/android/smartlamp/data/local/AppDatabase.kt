@@ -1,4 +1,4 @@
-package com.iot.android.smartlamp.data
+package com.iot.android.smartlamp.data.local
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
@@ -19,7 +19,6 @@ class AppDatabase(context : Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
     }
 
     companion object {
-        // If you change the database schema, you must increment the database version.
         const val DATABASE_VERSION = 1
         const val DATABASE_NAME = "SmartLamp.db"
 

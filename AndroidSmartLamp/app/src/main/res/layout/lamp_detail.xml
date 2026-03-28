@@ -79,12 +79,12 @@
                             android:gravity="center"
                             android:orientation="horizontal">
 
-                            <com.airbnb.lottie.LottieAnimationView
+                            <ImageView
                                 android:layout_width="100dp"
                                 android:layout_height="100dp"
-                                app:lottie_autoPlay="true"
-                                app:lottie_loop="true"
-                                app:lottie_rawRes="@raw/light_bulb" />
+                                android:src="@drawable/bulb_iot"
+                                android:contentDescription="@string/bulb"
+                                app:tint="@color/blue_grey" />
 
                             <LinearLayout
                                 android:layout_width="match_parent"

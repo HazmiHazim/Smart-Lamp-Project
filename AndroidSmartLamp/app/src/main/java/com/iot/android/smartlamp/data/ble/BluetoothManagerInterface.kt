@@ -1,4 +1,4 @@
-package com.iot.android.smartlamp.service.local.bluetooth
+package com.iot.android.smartlamp.data.ble
 
 import android.bluetooth.BluetoothDevice
 import com.iot.android.smartlamp.model.DiscoveredLed

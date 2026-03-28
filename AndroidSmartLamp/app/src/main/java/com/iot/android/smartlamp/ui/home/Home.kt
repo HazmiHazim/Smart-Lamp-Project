@@ -1,4 +1,4 @@
-package com.iot.android.smartlamp.screen.Fragment
+package com.iot.android.smartlamp.ui.home
 
 import android.app.Activity
 import android.content.Intent
@@ -18,14 +18,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.facebook.shimmer.ShimmerFrameLayout
-import com.iot.android.smartlamp.DependencyContainer
 import com.iot.android.smartlamp.R
-import com.iot.android.smartlamp.adapter.LampAdapter
+import com.iot.android.smartlamp.di.DependencyContainer
 import com.iot.android.smartlamp.model.Lamp
-import com.iot.android.smartlamp.screen.LampDetailActivity
+import com.iot.android.smartlamp.ui.adapter.LampAdapter
+import com.iot.android.smartlamp.ui.detail.LampDetailActivity
+import com.iot.android.smartlamp.ui.LampVM
+import com.iot.android.smartlamp.ui.LampVMFactory
 import com.iot.android.smartlamp.util.ScreenUtils
-import com.iot.android.smartlamp.viewModel.LampVM
-import com.iot.android.smartlamp.viewModel.LampVMFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 

@@ -1,13 +1,13 @@
-package com.iot.android.smartlamp
+package com.iot.android.smartlamp.di
 
 import android.content.Context
-import com.iot.android.smartlamp.data.AppDatabase
-import com.iot.android.smartlamp.data.repository.LampRepository
-import com.iot.android.smartlamp.data.repository.LampRepositoryInterface
-import com.iot.android.smartlamp.service.local.Lamp.LampService
-import com.iot.android.smartlamp.service.local.Lamp.LampServiceInterface
-import com.iot.android.smartlamp.service.local.bluetooth.BluetoothManager
-import com.iot.android.smartlamp.service.local.bluetooth.BluetoothManagerInterface
+import com.iot.android.smartlamp.data.local.AppDatabase
+import com.iot.android.smartlamp.data.local.LampRepository
+import com.iot.android.smartlamp.data.local.LampRepositoryInterface
+import com.iot.android.smartlamp.data.ble.BluetoothManager
+import com.iot.android.smartlamp.data.ble.BluetoothManagerInterface
+import com.iot.android.smartlamp.service.LampService
+import com.iot.android.smartlamp.service.LampServiceInterface
 
 object DependencyContainer {
     private var appDatabase : AppDatabase? = null

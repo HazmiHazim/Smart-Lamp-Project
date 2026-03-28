@@ -1,8 +1,8 @@
-package com.iot.android.smartlamp.viewModel
+package com.iot.android.smartlamp.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.iot.android.smartlamp.service.local.Lamp.LampServiceInterface
+import com.iot.android.smartlamp.service.LampServiceInterface
 
 class LampVMFactory(private val lampService: LampServiceInterface) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {

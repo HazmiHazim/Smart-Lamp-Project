@@ -1,4 +1,4 @@
-package com.iot.android.smartlamp.viewModel
+package com.iot.android.smartlamp.ui
 
 import android.bluetooth.BluetoothDevice
 import androidx.lifecycle.LiveData
@@ -6,7 +6,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.iot.android.smartlamp.model.Lamp
-import com.iot.android.smartlamp.service.local.Lamp.LampServiceInterface
+import com.iot.android.smartlamp.service.LampServiceInterface
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -42,7 +42,6 @@ class LampVM(private val lampService : LampServiceInterface) : ViewModel() {
     }
 
     fun toggleLampState(lampId: Int, lampState: Boolean) {
-        // Update UI immediately
         _lampList.postValue(_lampList.value?.map { lamp ->
             if (lamp.id == lampId) lamp.copy(state = lampState) else lamp
         } ?: emptyList())

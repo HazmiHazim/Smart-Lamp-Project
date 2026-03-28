@@ -1,4 +1,4 @@
-package com.iot.android.smartlamp.adapter
+package com.iot.android.smartlamp.ui.adapter
 
 import android.view.LayoutInflater
 import android.view.View

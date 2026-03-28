@@ -1,4 +1,4 @@
-package com.iot.android.smartlamp.screen
+package com.iot.android.smartlamp.ui.detail
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
@@ -26,10 +26,10 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.iot.android.smartlamp.DependencyContainer
 import com.iot.android.smartlamp.R
-import com.iot.android.smartlamp.viewModel.LampVM
-import com.iot.android.smartlamp.viewModel.LampVMFactory
+import com.iot.android.smartlamp.di.DependencyContainer
+import com.iot.android.smartlamp.ui.LampVM
+import com.iot.android.smartlamp.ui.LampVMFactory
 import com.skydoves.colorpickerview.ColorPickerView
 import com.skydoves.colorpickerview.listeners.ColorEnvelopeListener
 import kotlinx.coroutines.Dispatchers
@@ -60,7 +60,6 @@ class LampDetailActivity : AppCompatActivity() {
         LampVMFactory(DependencyContainer.provideLampService(this))
     }
 
-    // Lazy-loaded and cached color map
     private var colourMap: Map<String, String>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -96,7 +95,6 @@ class LampDetailActivity : AppCompatActivity() {
         switch.isChecked = lampState
         updateSwitchUI(lampState)
 
-        // Pre-load color map off main thread
         lifecycleScope.launch {
             colourMap = withContext(Dispatchers.IO) {
                 loadColourMap(this@LampDetailActivity)

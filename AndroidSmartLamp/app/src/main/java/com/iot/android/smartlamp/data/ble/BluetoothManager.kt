@@ -1,4 +1,4 @@
-package com.iot.android.smartlamp.service.local.bluetooth
+package com.iot.android.smartlamp.data.ble
 
 import android.Manifest
 import android.bluetooth.BluetoothDevice
@@ -39,14 +39,12 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     override fun connect(device: BluetoothDevice) {
-        // Close existing connection before creating a new one
         bluetoothGatt?.let { gatt ->
             gatt.disconnect()
             gatt.close()
             bluetoothGatt = null
         }
 
-        // Save MAC for auto-reconnect
         prefs.edit().putString("last_device_mac", device.address).apply()
 
         bluetoothGatt = device.connectGatt(context, false, object : BluetoothGattCallback() {
@@ -108,7 +106,6 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
                         }
 
                         Log.d("BLE", "Discovered $pairCount LED(s)")
-                        // Dispatch to main thread
                         mainHandler.post { onLedsDiscovered?.invoke(discoveredLeds) }
                         return
                     }
@@ -182,7 +179,6 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
             return
         }
 
-        // Stop any ongoing scan
         currentScanCallback?.let { scanner.stopScan(it) }
 
         val scanCallback = object : ScanCallback() {
@@ -211,7 +207,6 @@ class BluetoothManager(private val context: Context) : BluetoothManagerInterface
         currentScanCallback = scanCallback
         scanner.startScan(scanCallback)
 
-        // Timeout after 10 seconds
         scanHandler.postDelayed({
             scanner.stopScan(scanCallback)
             currentScanCallback = null

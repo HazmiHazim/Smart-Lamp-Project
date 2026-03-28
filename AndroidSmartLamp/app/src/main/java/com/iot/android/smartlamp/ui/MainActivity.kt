@@ -1,4 +1,4 @@
-package com.iot.android.smartlamp.screen
+package com.iot.android.smartlamp.ui
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -8,11 +8,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import com.iot.android.smartlamp.DependencyContainer
 import com.iot.android.smartlamp.R
-import com.iot.android.smartlamp.screen.Fragment.Home
-import com.iot.android.smartlamp.viewModel.LampVM
-import com.iot.android.smartlamp.viewModel.LampVMFactory
+import com.iot.android.smartlamp.di.DependencyContainer
+import com.iot.android.smartlamp.ui.home.Home
 import kotlin.getValue
 
 class MainActivity : AppCompatActivity() {

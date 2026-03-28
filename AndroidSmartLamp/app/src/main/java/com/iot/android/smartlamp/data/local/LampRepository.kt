@@ -1,8 +1,7 @@
-package com.iot.android.smartlamp.data.repository
+package com.iot.android.smartlamp.data.local
 
 import android.content.ContentValues
 import android.util.Log
-import com.iot.android.smartlamp.data.AppDatabase
 import com.iot.android.smartlamp.model.Lamp
 
 class LampRepository(private val db : AppDatabase) : LampRepositoryInterface  {
@@ -103,7 +102,7 @@ class LampRepository(private val db : AppDatabase) : LampRepositoryInterface  {
             put("state", lamp.state)
             put("colour", lamp.colour)
             put("brightness", lamp.brightness)
-            put("modified_at", System.currentTimeMillis()) // update timestamp
+            put("modified_at", System.currentTimeMillis())
         }
 
         db.writableDatabase.update("lamps", values, "id = ?", arrayOf(lamp.id.toString()))
@@ -126,5 +125,4 @@ class LampRepository(private val db : AppDatabase) : LampRepositoryInterface  {
     override fun deleteLamp(id : Int) : Unit {
         db.writableDatabase.delete("lamps", "id = ?", arrayOf(id.toString()))
     }
-
 }

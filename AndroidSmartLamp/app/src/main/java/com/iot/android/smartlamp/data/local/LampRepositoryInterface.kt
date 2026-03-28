@@ -1,4 +1,4 @@
-package com.iot.android.smartlamp.data.repository
+package com.iot.android.smartlamp.data.local
 
 import com.iot.android.smartlamp.model.Lamp
 

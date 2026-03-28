@@ -1,10 +1,10 @@
-package com.iot.android.smartlamp.service.local.Lamp
+package com.iot.android.smartlamp.service
 
 import android.bluetooth.BluetoothDevice
-import com.iot.android.smartlamp.data.repository.LampRepositoryInterface
+import com.iot.android.smartlamp.data.local.LampRepositoryInterface
+import com.iot.android.smartlamp.data.ble.BluetoothManagerInterface
 import com.iot.android.smartlamp.model.DiscoveredLed
 import com.iot.android.smartlamp.model.Lamp
-import com.iot.android.smartlamp.service.local.bluetooth.BluetoothManagerInterface
 import java.util.concurrent.Executors
 
 class LampService(
@@ -17,7 +17,6 @@ class LampService(
 
     init {
         bluetoothManager.onLedsDiscovered = { discoveredLeds ->
-            // DB operations on background thread
             dbExecutor.execute {
                 registerDiscoveredLamps(discoveredLeds)
             }
@@ -47,7 +46,6 @@ class LampService(
             bluetoothManager.registerLampMapping(rxKey, led)
         }
 
-        // Re-register existing lamps that match discovered LEDs
         val allLamps = lampRepo.getAllLamps()
         for (lamp in allLamps) {
             val matchingLed = leds.find { it.rxUUID.toString() == lamp.rxKey }
