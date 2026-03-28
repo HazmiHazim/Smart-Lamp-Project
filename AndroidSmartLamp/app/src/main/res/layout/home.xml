@@ -41,6 +41,37 @@
 
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/voice_status_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/blue_grey"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingVertical="6dp"
+        android:paddingHorizontal="15dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/voice_mic_icon"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@android:drawable/ic_btn_speak_now"
+            android:layout_marginEnd="8dp"
+            android:contentDescription="@string/bulb"
+            app:tint="@color/white" />
+
+        <TextView
+            android:id="@+id/voice_status_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/voice_idle"
+            android:textColor="@color/white"
+            android:textSize="12sp"
+            android:fontFamily="@font/roboto_serif_medium" />
+
+    </LinearLayout>
+
     <com.facebook.shimmer.ShimmerFrameLayout
         android:id="@+id/home_shimmer_layout"
         android:layout_width="match_parent"

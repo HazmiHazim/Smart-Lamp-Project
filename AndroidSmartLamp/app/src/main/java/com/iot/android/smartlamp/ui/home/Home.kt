@@ -2,6 +2,7 @@ package com.iot.android.smartlamp.ui.home
 
 import android.Manifest
 import android.app.Activity
+import android.util.Log
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -22,6 +23,7 @@ import com.facebook.shimmer.ShimmerFrameLayout
 import com.iot.android.smartlamp.R
 import com.iot.android.smartlamp.di.DependencyContainer
 import com.iot.android.smartlamp.model.Lamp
+import com.iot.android.smartlamp.service.voice.VoiceRecognitionManager
 import com.iot.android.smartlamp.ui.adapter.LampAdapter
 import com.iot.android.smartlamp.ui.detail.LampDetailActivity
 import com.iot.android.smartlamp.ui.LampVM
@@ -31,6 +33,8 @@ import com.iot.android.smartlamp.util.ScreenUtils
 class Home : Fragment(R.layout.home) {
 
     private lateinit var topBar : LinearLayout
+    private lateinit var voiceStatusBar : LinearLayout
+    private lateinit var voiceStatusText : TextView
     private lateinit var shimmerLayout : ShimmerFrameLayout
     private lateinit var swipeRefresh : SwipeRefreshLayout
     private lateinit var recyclerView : RecyclerView
@@ -66,6 +70,8 @@ class Home : Fragment(R.layout.home) {
         super.onViewCreated(view, savedInstanceState)
 
         topBar = view.findViewById(R.id.topbar)
+        voiceStatusBar = view.findViewById(R.id.voice_status_bar)
+        voiceStatusText = view.findViewById(R.id.voice_status_text)
         shimmerLayout = view.findViewById(R.id.home_shimmer_layout)
         swipeRefresh = view.findViewById(R.id.home_swipe_refresh)
         recyclerView = view.findViewById(R.id.home_recyclerview)
@@ -105,6 +111,51 @@ class Home : Fragment(R.layout.home) {
         lampVM.lampList.observe(viewLifecycleOwner) { list ->
             lampAdapter.updateList(list)
             updateLampCardState(list)
+        }
+
+        setupVoiceStatus()
+    }
+
+    private fun setupVoiceStatus() {
+        val voiceManager = DependencyContainer.provideVoiceRecognitionManager(requireActivity())
+        Log.d("VoiceUI", "setupVoiceStatus called, current state: ${voiceManager.state}")
+
+        voiceManager.onStateChanged = { state ->
+            Log.d("VoiceUI", "State changed to: $state")
+            updateVoiceUI(state)
+        }
+
+        voiceManager.onCommandResult = { message ->
+            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+        }
+
+        // Apply current state immediately in case init already completed
+        Log.d("VoiceUI", "Applying initial state: ${voiceManager.state}")
+        updateVoiceUI(voiceManager.state)
+    }
+
+    private fun updateVoiceUI(state: VoiceRecognitionManager.State) {
+        Log.d("VoiceUI", "updateVoiceUI: $state, bar visible: ${voiceStatusBar.visibility}")
+        when (state) {
+            VoiceRecognitionManager.State.INITIALIZING -> {
+                voiceStatusBar.visibility = View.VISIBLE
+                voiceStatusText.setText(R.string.voice_initializing)
+            }
+            VoiceRecognitionManager.State.IDLE -> {
+                voiceStatusBar.visibility = View.VISIBLE
+                voiceStatusText.setText(R.string.voice_idle)
+            }
+            VoiceRecognitionManager.State.LISTENING -> {
+                voiceStatusBar.visibility = View.VISIBLE
+                voiceStatusText.setText(R.string.voice_listening)
+            }
+            VoiceRecognitionManager.State.PROCESSING -> {
+                voiceStatusBar.visibility = View.VISIBLE
+                voiceStatusText.text = "Processing..."
+            }
+            VoiceRecognitionManager.State.ERROR -> {
+                voiceStatusBar.visibility = View.GONE
+            }
         }
     }
 

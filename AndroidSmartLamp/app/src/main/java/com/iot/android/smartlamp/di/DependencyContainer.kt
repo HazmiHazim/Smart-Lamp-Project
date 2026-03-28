@@ -8,6 +8,7 @@ import com.iot.android.smartlamp.data.ble.BluetoothManager
 import com.iot.android.smartlamp.data.ble.BluetoothManagerInterface
 import com.iot.android.smartlamp.service.LampService
 import com.iot.android.smartlamp.service.LampServiceInterface
+import com.iot.android.smartlamp.service.voice.VoiceRecognitionManager
 
 object DependencyContainer {
     private var appDatabase : AppDatabase? = null
@@ -17,6 +18,9 @@ object DependencyContainer {
 
     @Volatile
     private var lampService: LampServiceInterface? = null
+
+    @Volatile
+    private var voiceRecognitionManager: VoiceRecognitionManager? = null
 
     fun initDatabase(context : Context) {
         appDatabase = AppDatabase.getInstance(context)
@@ -41,6 +45,17 @@ object DependencyContainer {
                 lampRepository
             ).also {
                 lampService = it
+            }
+        }
+    }
+
+    fun provideVoiceRecognitionManager(context: Context): VoiceRecognitionManager {
+        return voiceRecognitionManager ?: synchronized(this) {
+            voiceRecognitionManager ?: VoiceRecognitionManager(
+                context.applicationContext,
+                provideLampService(context)
+            ).also {
+                voiceRecognitionManager = it
             }
         }
     }

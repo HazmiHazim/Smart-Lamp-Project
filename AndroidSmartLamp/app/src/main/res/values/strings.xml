@@ -15,4 +15,7 @@
     <string name="no_device_found">No device found. Pull down to scan again.</string>
     <string name="connected_device_title">Connected Device:</string>
     <string name="app_version">V2.0.0</string>
+    <string name="voice_idle">Say \"hey lamp\" to start</string>
+    <string name="voice_listening">Listening for command...</string>
+    <string name="voice_initializing">Loading voice model...</string>
 </resources>
